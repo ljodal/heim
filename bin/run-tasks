@@ -1,0 +1,24 @@
+#!/usr/bin/env python3
+"""
+Apply the given migration.
+"""
+
+import argparse
+import asyncio
+
+from weather_station.tasks.executor import run_tasks
+
+parser = argparse.ArgumentParser(description="Apply a database migration")
+parser.add_argument("--num-workers", help="Number of workers to run", default=1)
+
+args = parser.parse_args()
+
+
+async def main(num_workers: int) -> None:
+    await asyncio.gather(*(run_tasks() for _ in range(num_workers)))
+
+
+try:
+    asyncio.run(main(args.num_workers))
+except KeyboardInterrupt:
+    pass
