@@ -1,3 +1,7 @@
+"""
+Basic tests to ensure that the database logic works.
+"""
+
 import pytest
 
 from weather_station import db

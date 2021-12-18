@@ -1,18 +1,15 @@
 from datetime import datetime
 
 from .. import db
-from ..db.types import Attribute
+from ..sensors.types import Attribute
 
 
-@db.transaction()  # type: ignore
-async def create_yr_forecast(
-    *, account_id: int, name: str, coordinate: tuple[float, float], location_id: int
-) -> int:
+async def create_forecast(*, name: str, account_id: int, location_id: int) -> int:
     """
-    Create a forecast to be populated from YR.
+    Create a new forecast.
     """
 
-    forecast_id: int = await db.fetchval(
+    return await db.fetchval(
         """
         INSERT INTO forecast (account_id, location_id, name)
         VALUES ($1, $2, $3) RETURNING id
@@ -22,21 +19,8 @@ async def create_yr_forecast(
         name,
     )
 
-    await db.execute(
-        """
-        INSERT INTO yr_forecast (account_id, forecast_id, name, coordinate)
-        VALUES ($1, $2, $3, $4)
-        """,
-        account_id,
-        forecast_id,
-        name,
-        coordinate,
-    )
 
-    return forecast_id
-
-
-@db.transaction()  # type: ignore
+@db.transaction()
 async def create_forecast_instance(
     *,
     forecast_id: int,

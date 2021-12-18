@@ -7,6 +7,12 @@ import asyncpg  # type: ignore
 import pytest
 
 from weather_station import db
+from weather_station.accounts.queries import create_account
+from weather_station.accounts.utils import hash_password
+
+#######################
+# Basic project setup #
+#######################
 
 
 @pytest.fixture(scope="session")
@@ -45,3 +51,28 @@ def connection(_connection: asyncpg.Connection) -> Iterator[asyncpg.Connection]:
     # context with the test function.
     with db.set_connection(_connection):
         yield _connection
+
+
+############
+# Accounts #
+############
+
+
+@pytest.fixture
+def username() -> str:
+    return "test@example.com"
+
+
+@pytest.fixture
+def password() -> str:
+    return "password"
+
+
+@pytest.fixture
+def hashed_password(password) -> str:
+    return hash_password(password, iterations=1)
+
+
+@pytest.fixture
+async def account_id(connection, username: str, hashed_password: str) -> int:
+    return await create_account(username=username, hashed_password=hashed_password)
