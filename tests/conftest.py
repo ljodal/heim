@@ -8,7 +8,7 @@ import pytest
 
 from weather_station import db
 from weather_station.accounts.queries import create_account
-from weather_station.accounts.utils import hash_password
+from weather_station.auth.models import Session
 from weather_station.auth.queries import create_session
 
 #######################
@@ -44,8 +44,10 @@ async def _connection(setup_db) -> AsyncIterator[asyncpg.Connection]:
         await db.initialize_connection(connection)
         transaction = connection.transaction()
         await transaction.start()
-        yield connection
-        await transaction.rollback()
+        try:
+            yield connection
+        finally:
+            await transaction.rollback()
     finally:
         await connection.close()
 
@@ -75,13 +77,8 @@ def password() -> str:
 
 
 @pytest.fixture
-def hashed_password(password) -> str:
-    return hash_password(password, iterations=1)
-
-
-@pytest.fixture
-async def account_id(connection, username: str, hashed_password: str) -> int:
-    return await create_account(username=username, hashed_password=hashed_password)
+async def account_id(connection, username: str, password: str) -> int:
+    return await create_account(username=username, password=password)
 
 
 ############
@@ -90,5 +87,5 @@ async def account_id(connection, username: str, hashed_password: str) -> int:
 
 
 @pytest.fixture
-async def session(connection, account_id: int) -> None:
+async def session(connection, account_id: int) -> Session:
     return await create_session(account_id=account_id)

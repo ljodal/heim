@@ -4,9 +4,7 @@ from contextlib import asynccontextmanager, contextmanager
 from contextvars import ContextVar
 from typing import (
     Any,
-    AsyncContextManager,
     AsyncIterator,
-    Callable,
     Iterable,
     Iterator,
     Optional,
@@ -24,6 +22,35 @@ current_connection: ContextVar[asyncpg.Connection] = ContextVar("connection")
 thread_local = threading.local()
 
 
+@asynccontextmanager
+async def setup() -> AsyncIterator[None]:
+    """
+    Configure database connectivity with a single connection.
+    """
+
+    con = await asyncpg.connect()
+    try:
+        await initialize_connection(con)
+        with set_connection(con):
+            yield
+    finally:
+        await con.close()
+
+
+@asynccontextmanager
+async def setup_pool() -> AsyncIterator[None]:
+    """
+    Configure database connectivity with a connection pool.
+    """
+
+    pool = await asyncpg.create_pool()
+    thread_local.connection_pool = pool
+    try:
+        yield
+    finally:
+        await pool.close()
+
+
 @contextmanager
 def set_connection(con: asyncpg.Connection) -> Iterator[None]:
     """
@@ -33,10 +60,6 @@ def set_connection(con: asyncpg.Connection) -> Iterator[None]:
     reset_token = current_connection.set(con)
     yield
     current_connection.reset(reset_token)
-
-
-def set_connection_pool(pool: asyncpg.pool.Pool) -> None:
-    thread_local.connection_pool = pool
 
 
 async def initialize_connection(con: asyncpg.Connection) -> None:
@@ -49,11 +72,7 @@ async def initialize_connection(con: asyncpg.Connection) -> None:
     )
 
 
-# Mypy doesn't understand the typing, so teach it
-connection: Callable[[], AsyncContextManager[asyncpg.Connection]]
-
-
-@asynccontextmanager  # type: ignore
+@asynccontextmanager
 async def connection() -> AsyncIterator[asyncpg.Connection]:
     """
     Get or acquire a connection for connection for the current task.

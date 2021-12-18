@@ -6,9 +6,7 @@ Apply the given migration.
 import argparse
 import asyncio
 
-import asyncpg  # type: ignore
-
-from weather_station.db import initialize_connection, set_connection_pool
+from weather_station import db
 from weather_station.tasks.executor import run_tasks
 
 parser = argparse.ArgumentParser(description="Execute background tasks")
@@ -17,10 +15,9 @@ parser.add_argument("--num-workers", help="Number of workers to run", default=1)
 args = parser.parse_args()
 
 
+@db.setup_pool()
 async def main(num_workers: int) -> None:
-    async with asyncpg.create_pool(init=initialize_connection) as pool:
-        await set_connection_pool(pool)
-        await asyncio.gather(*(run_tasks() for _ in range(num_workers)))
+    await asyncio.gather(*(run_tasks() for _ in range(num_workers)))
 
 
 try:

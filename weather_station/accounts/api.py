@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from . import queries, utils
+from . import queries
 
 router = APIRouter()
 
@@ -13,8 +13,5 @@ class CreateAccountPayload(BaseModel):
 
 @router.get("/")
 async def create_account(body: CreateAccountPayload):
-    hashed_password = utils.hash_password(body.password)
-    await queries.create_account(
-        username=body.username, hashed_password=hashed_password
-    )
+    await queries.create_account(username=body.username, password=body.password)
     return {"success": True}

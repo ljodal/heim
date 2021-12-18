@@ -1,8 +1,11 @@
 from .. import db
+from .utils import hash_password
 
 
-async def create_account(*, username: str, hashed_password: str) -> int:
+async def create_account(*, username: str, password: str) -> int:
     """Create a new account"""
+
+    hashed_password = hash_password(password)
 
     return await db.fetchval(
         "INSERT INTO account (username, password) VALUES ($1, $2) RETURNING id",

@@ -12,5 +12,6 @@ def test_hash_password(password: str) -> None:
     assert encoded_password != password
 
 
-def test_password_hashing(password: str, hashed_password: str) -> None:
+def test_password_hashing(password: str) -> None:
+    hashed_password = hash_password(password)
     assert compare_password(stored_password=hashed_password, provided_password=password)
