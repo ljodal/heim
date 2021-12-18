@@ -1,3 +1,4 @@
+import json
 import threading
 from contextlib import asynccontextmanager, contextmanager
 from contextvars import ContextVar
@@ -20,7 +21,7 @@ T = TypeVar("T", bound=asyncpg.Record)
 
 current_connection: ContextVar[asyncpg.Connection] = ContextVar("connection")
 
-local_data = threading.local()
+thread_local = threading.local()
 
 
 @contextmanager
@@ -34,6 +35,20 @@ def set_connection(con: asyncpg.Connection) -> Iterator[None]:
     current_connection.reset(reset_token)
 
 
+def set_connection_pool(pool: asyncpg.pool.Pool) -> None:
+    thread_local.connection_pool = pool
+
+
+async def initialize_connection(con: asyncpg.Connection) -> None:
+    """
+    Hook to customize connections.
+    """
+
+    await con.set_type_codec(
+        "jsonb", encoder=json.dumps, decoder=json.loads, schema="pg_catalog"
+    )
+
+
 # Mypy doesn't understand the typing, so teach it
 connection: Callable[[], AsyncContextManager[asyncpg.Connection]]
 
@@ -41,7 +56,7 @@ connection: Callable[[], AsyncContextManager[asyncpg.Connection]]
 @asynccontextmanager  # type: ignore
 async def connection() -> AsyncIterator[asyncpg.Connection]:
     """
-    Get or aquire a connection for connection for the current task.
+    Get or acquire a connection for connection for the current task.
     """
 
     # First try to use the connection assigned to this task
@@ -55,8 +70,8 @@ async def connection() -> AsyncIterator[asyncpg.Connection]:
     # Fall back to leasing a connection from the connection pool. If this is
     # set we populate the context variable to ensure the same connection is
     # used e.g. when within a transactin block.
-    if pool := getattr(local_data, "connection_pool", None):
-        async with pool.aquire() as con:
+    if pool := getattr(thread_local, "connection_pool", None):
+        async with pool.acquire() as con:
             with set_connection(con):
                 yield con
     else:
