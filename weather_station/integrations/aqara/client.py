@@ -3,23 +3,22 @@ import os
 import string
 import time
 from datetime import datetime
-from typing import Any, Iterable
+from typing import Iterable, Optional, Type, TypeVar
 
 import httpx
 
 from ...accounts.utils import get_random_string
 from .exceptions import AqaraAPIError, ExpiredAccessToken
 from .types import (
+    AccessTokenResult,
+    AuthCodeResult,
+    BaseResponse,
     DeviceInfo,
-    GetAuthCodeResponse,
-    GetTokenResponse,
     Intent,
     IntentData,
-    QueryDeviceInfoResponse,
-    QueryResourceHistoryResponse,
-    QueryResourceInfoResponse,
-    RefreshTokenResponse,
-    ResourceHistoryPoint,
+    QueryDeviceInfoResult,
+    QueryResourceHistoryResult,
+    RefreshTokenResult,
     ResourceInfo,
 )
 
@@ -46,29 +45,29 @@ class AqaraClient:
     # Auth #
     ########
 
-    async def get_auth_code(self, *, code: str, account: str) -> GetAuthCodeResponse:
+    async def get_auth_code(self, *, code: str, account: str) -> AuthCodeResult:
 
-        result = await self._request(
+        return await self._request(
             intent="config.auth.getAuthCode",
             data={"account": account, "accountType": 0, "accessTokenValidity": "1h"},
+            response_type=BaseResponse[AuthCodeResult],
         )
-        return GetAuthCodeResponse(**result)
 
-    async def get_token(self, *, code: str, account: str) -> GetTokenResponse:
+    async def get_token(self, *, code: str, account: str) -> AccessTokenResult:
 
-        result = await self._request(
+        return await self._request(
             intent="config.auth.getToken",
             data={"authCode": code, "account": account, "accountType": 0},
+            response_type=BaseResponse[AccessTokenResult],
         )
-        return GetTokenResponse(**result)
 
-    async def refresh_token(self, *, refresh_token: str) -> RefreshTokenResponse:
+    async def refresh_token(self, *, refresh_token: str) -> RefreshTokenResult:
 
-        result = await self._request(
+        return await self._request(
             intent="config.auth.refreshToken",
             data={"refreshToken": refresh_token},
+            response_type=BaseResponse[RefreshTokenResult],
         )
-        return RefreshTokenResponse(**result)
 
     ###############
     # Device info #
@@ -86,11 +85,11 @@ class AqaraClient:
             result = await self._request(
                 intent="query.device.info",
                 data={"pageNum": page_num},
+                response_type=BaseResponse[QueryDeviceInfoResult],
             )
-            data = QueryDeviceInfoResponse(**result)
-            devices.extend(data.data)
+            devices.extend(result.data)
 
-            if data.total_count <= len(devices):
+            if result.total_count <= len(devices):
                 break
 
             page_num += 1
@@ -102,34 +101,37 @@ class AqaraClient:
         Get all resources for the given device model.
         """
 
-        result = await self._request(
+        return await self._request(
             intent="query.resource.info",
             data={"model": model},
+            response_type=BaseResponse[list[ResourceInfo]],
         )
-        data = QueryResourceInfoResponse(resources=result)
-
-        return data.resources
 
     ################
     # Measurements #
     ################
 
     async def get_resource_history(
-        self, *, device_id: str, resource_ids: Iterable[str], from_time: datetime
-    ) -> list[ResourceHistoryPoint]:
+        self,
+        *,
+        device_id: str,
+        resource_ids: Iterable[str],
+        from_time: datetime,
+        scan_id: Optional[str] = None,
+    ) -> QueryResourceHistoryResult:
 
         start_time = str(int(from_time.timestamp() * 1000))
 
-        result = await self._request(
+        return await self._request(
             intent="fetch.resource.history",
             data={
                 "subjectId": device_id,
                 "resourceIds": list(resource_ids),
                 "startTime": start_time,
+                "scanId": scan_id,
             },
+            response_type=BaseResponse[QueryResourceHistoryResult],
         )
-        data = QueryResourceHistoryResponse(**result)
-        return data.data
 
     ###################
     # Context manager #
@@ -147,7 +149,11 @@ class AqaraClient:
     # Internal helpers #
     ####################
 
-    async def _request(self, intent: Intent, data: IntentData) -> Any:
+    T = TypeVar("T")
+
+    async def _request(
+        self, intent: Intent, data: IntentData, response_type: Type[BaseResponse[T]]
+    ) -> T:
 
         if not self.client:
             self.client = httpx.AsyncClient()
@@ -160,7 +166,7 @@ class AqaraClient:
         self._prepare_auth(request)
 
         response = await self.client.send(request)
-        return self._check_response(response)
+        return self._check_response(response, response_type)
 
     def _prepare_auth(self, request: httpx.Request) -> None:
 
@@ -185,21 +191,27 @@ class AqaraClient:
         request.headers["Nonce"] = nonce
         request.headers["Sign"] = signature
 
-    def _check_response(self, response: httpx.Response) -> Any:
+    def _check_response(
+        self, response: httpx.Response, response_type: Type[BaseResponse[T]]
+    ) -> T:
 
         response.raise_for_status()
+
         data = response.json()
+        parsed_response = response_type.parse_obj(data)
 
-        assert isinstance(data, dict)
-        assert "code" in data
-        code = data["code"]
-        if code == 108:
-            raise ExpiredAccessToken
-        elif code != 0:
-            raise AqaraAPIError(f"Unexpected response from Aqara API: {code}")
+        if parsed_response.code == 108:
+            raise ExpiredAccessToken("Access token has expired", parsed_response)
+        elif parsed_response.code != 0:
+            raise AqaraAPIError(
+                f"Unexpected response from Aqara API: {parsed_response.code}",
+                parsed_response,
+            )
+        elif parsed_response.result is None:
+            # TODO: Might need allow this if T is Optional / None
+            raise AqaraAPIError("No result in response", parsed_response)
 
-        assert "result" in data
-        return data["result"]
+        return parsed_response.result
 
 
 def getenv(key: str) -> str:
@@ -209,7 +221,7 @@ def getenv(key: str) -> str:
     raise KeyError(f"Environment variable {key} not set")
 
 
-def get_nonce(length):
+def get_nonce(length: int) -> str:
     return get_random_string(
         length, allowed_chars=string.ascii_lowercase + string.digits
     )

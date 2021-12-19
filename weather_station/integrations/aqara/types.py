@@ -1,7 +1,8 @@
 from datetime import datetime
-from typing import Literal, Optional, TypedDict, Union
+from typing import Generic, Literal, Optional, TypedDict, TypeVar, Union
 
-import pydantic
+from pydantic import BaseModel, Field
+from pydantic.generics import GenericModel
 
 ###########
 # Helpers #
@@ -49,6 +50,7 @@ class FetchResourceHistoryData(TypedDict):
     subjectId: str
     resourceIds: list[str]
     startTime: str
+    scanId: Optional[str]
 
 
 Intent = Union[
@@ -74,15 +76,31 @@ IntentData = Union[
 # Response types #
 ##################
 
+T = TypeVar("T")
 
-class GetAuthCodeResponse(pydantic.BaseModel):
+
+class BaseResponse(GenericModel, Generic[T]):
+    code: int
+    message: str
+    msg_details: Optional[str] = None
+    request_id: str
+
+    # If we do not get a successful response this is not set, so we need to
+    # have a default value here.
+    result: Optional[T] = None
+
+    class Config:
+        alias_generator = to_camel
+
+
+class AuthCodeResult(BaseModel):
     auth_code: Optional[str]
 
     class Config:
         alias_generator = to_camel
 
 
-class GetTokenResponse(pydantic.BaseModel):
+class AccessTokenResult(BaseModel):
     expires_in: int
     access_token: str
     refresh_token: str
@@ -91,7 +109,7 @@ class GetTokenResponse(pydantic.BaseModel):
         alias_generator = to_camel
 
 
-class RefreshTokenResponse(pydantic.BaseModel):
+class RefreshTokenResult(BaseModel):
     expires_in: int
     access_token: str
     refresh_token: str
@@ -100,7 +118,7 @@ class RefreshTokenResponse(pydantic.BaseModel):
         alias_generator = to_camel
 
 
-class DeviceInfo(pydantic.BaseModel):
+class DeviceInfo(BaseModel):
     parent_did: Optional[str]
     position_id: str
     create_time: datetime
@@ -117,7 +135,7 @@ class DeviceInfo(pydantic.BaseModel):
         alias_generator = to_camel
 
 
-class QueryDeviceInfoResponse(pydantic.BaseModel):
+class QueryDeviceInfoResult(BaseModel):
     data: list[DeviceInfo]
     total_count: int
 
@@ -125,7 +143,7 @@ class QueryDeviceInfoResponse(pydantic.BaseModel):
         alias_generator = to_camel
 
 
-class ResourceInfo(pydantic.BaseModel):
+class ResourceInfo(BaseModel):
     enums: Optional[str]
     resource_id: str
     min_value: Optional[int]
@@ -141,15 +159,8 @@ class ResourceInfo(pydantic.BaseModel):
         alias_generator = to_camel
 
 
-class QueryResourceInfoResponse(pydantic.BaseModel):
-    resources: list[ResourceInfo]
-
-    class Config:
-        alias_generator = to_camel
-
-
-class ResourceHistoryPoint(pydantic.BaseModel):
-    timestamp: datetime = pydantic.Field(alias="timeStamp")
+class ResourceHistoryPoint(BaseModel):
+    timestamp: datetime = Field(alias="timeStamp")
     resource_id: str
     value: int
     subject_id: str
@@ -158,7 +169,7 @@ class ResourceHistoryPoint(pydantic.BaseModel):
         alias_generator = to_camel
 
 
-class QueryResourceHistoryResponse(pydantic.BaseModel):
+class QueryResourceHistoryResult(BaseModel):
 
     data: list[ResourceHistoryPoint]
     scan_id: Optional[str]
