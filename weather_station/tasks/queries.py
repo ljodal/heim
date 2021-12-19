@@ -24,9 +24,9 @@ async def schedule_task(
     )
 
 
-async def get_next_task() -> tuple[
-    int, str, dict[str, Any], datetime, Optional[int]
-] | None:
+async def get_next_task(
+    *, now: Optional[datetime] = None
+) -> tuple[int, str, dict[str, Any], datetime, Optional[int]] | None:
     """
     Get and lock the next pending task. Must be called from within a
     transaction.
@@ -34,12 +34,13 @@ async def get_next_task() -> tuple[
 
     return await db.fetchrow(
         """
-        SELECT id, name, arguments, from_schedule_id
+        SELECT id, name, arguments, run_at, from_schedule_id
         FROM task
-        WHERE run_at <= now() AND started_at IS NULL
+        WHERE run_at <= $1 AND started_at IS NULL
         ORDER BY run_at
         FOR UPDATE SKIP LOCKED
-        """
+        """,
+        now or datetime.now(timezone.utc),
     )
 
 

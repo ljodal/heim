@@ -10,7 +10,7 @@ class Task(Protocol):
     def __call__(self, *args, **kwargs) -> Awaitable[Any]:
         ...
 
-    async def schedule(
+    async def defer(
         self, *, arguments: dict[str, Any], run_at: Optional[datetime] = ...
     ) -> int:
         ...
@@ -33,7 +33,7 @@ def task(*, name: str) -> Callable[[T], T]:
     Decorator for declaring a task that can be executed in the background.
     """
 
-    async def schedule(
+    async def defer(
         *, arguments: dict[str, Any], run_at: Optional[datetime] = None
     ) -> int:
         """
@@ -45,7 +45,7 @@ def task(*, name: str) -> Callable[[T], T]:
     def _inner(func: T) -> T:
         assert name not in _TASK_REGISTRY
         _TASK_REGISTRY[name] = cast(Task, func)
-        func.schedule = schedule  # type: ignore
+        func.defer = defer  # type: ignore
         return func
 
     return _inner
