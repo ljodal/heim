@@ -1,11 +1,12 @@
 from datetime import datetime
+from typing import Iterable
 
 from .. import db
 from .types import Attribute
 
 
-async def register_sensor_data(
-    *, sensor_id: int, attributes: dict[Attribute, list[tuple[datetime, float]]]
+async def save_measurements(
+    *, sensor_id: int, values: Iterable[tuple[Attribute, datetime, float]]
 ) -> None:
     """
     Insert a forecast instance.
@@ -19,7 +20,6 @@ async def register_sensor_data(
         """,
         [
             (sensor_id, attribute, timestamp, value)
-            for attribute, values in attributes.items()
-            for timestamp, value in values
+            for attribute, timestamp, value in values
         ],
     )

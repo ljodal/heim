@@ -1,13 +1,13 @@
 import hashlib
 import os
-import random
 import string
 import time
 from datetime import datetime
-from typing import Any
+from typing import Any, Iterable
 
 import httpx
 
+from ...accounts.utils import get_random_string
 from .exceptions import AqaraAPIError, ExpiredAccessToken
 from .types import (
     DeviceInfo,
@@ -17,8 +17,10 @@ from .types import (
     IntentData,
     QueryDeviceInfoResponse,
     QueryResourceHistoryResponse,
+    QueryResourceInfoResponse,
     RefreshTokenResponse,
     ResourceHistoryPoint,
+    ResourceInfo,
 )
 
 
@@ -27,7 +29,7 @@ class AqaraClient:
     A client for communicating with the Aqara Open API.
     """
 
-    def __init__(self, *, access_token: str | None, refresh_token: str | None) -> None:
+    def __init__(self, *, access_token: str | None = None) -> None:
         self.app_id = getenv("AQARA_APP_ID")
         self.app_key = getenv("AQARA_APP_KEY")
         self.key_id = getenv("AQARA_KEY_ID")
@@ -95,12 +97,25 @@ class AqaraClient:
 
         return devices
 
+    async def get_device_resources(self, *, model: str) -> list[ResourceInfo]:
+        """
+        Get all resources for the given device model.
+        """
+
+        result = await self._request(
+            intent="query.resource.info",
+            data={"model": model},
+        )
+        data = QueryResourceInfoResponse(resources=result)
+
+        return data.resources
+
     ################
     # Measurements #
     ################
 
-    async def get_measurements(
-        self, *, device_id: str, resource_ids: list[str], from_time: datetime
+    async def get_resource_history(
+        self, *, device_id: str, resource_ids: Iterable[str], from_time: datetime
     ) -> list[ResourceHistoryPoint]:
 
         start_time = str(int(from_time.timestamp() * 1000))
@@ -109,7 +124,7 @@ class AqaraClient:
             intent="fetch.resource.history",
             data={
                 "subjectId": device_id,
-                "resourceIds": resource_ids,
+                "resourceIds": list(resource_ids),
                 "startTime": start_time,
             },
         )
@@ -170,12 +185,10 @@ class AqaraClient:
         request.headers["Nonce"] = nonce
         request.headers["Sign"] = signature
 
-    def _check_response(self, response: httpx.Response) -> dict:
+    def _check_response(self, response: httpx.Response) -> Any:
 
         response.raise_for_status()
         data = response.json()
-
-        print(data)
 
         assert isinstance(data, dict)
         assert "code" in data
@@ -186,7 +199,6 @@ class AqaraClient:
             raise AqaraAPIError(f"Unexpected response from Aqara API: {code}")
 
         assert "result" in data
-        assert isinstance(data["result"], dict)
         return data["result"]
 
 
@@ -198,5 +210,6 @@ def getenv(key: str) -> str:
 
 
 def get_nonce(length):
-    letters = string.ascii_lowercase + string.digits
-    return "".join(random.choice(letters) for i in range(length))
+    return get_random_string(
+        length, allowed_chars=string.ascii_lowercase + string.digits
+    )

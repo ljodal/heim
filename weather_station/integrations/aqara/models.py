@@ -9,4 +9,4 @@ class AqaraAccount(BaseModel):
     username: str
     access_token: str
     refresh_token: str
-    expire_at: datetime
+    expires_at: datetime

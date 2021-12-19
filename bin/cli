@@ -1,0 +1,114 @@
+#!/usr/bin/env python3
+"""
+Apply the given migration.
+"""
+
+import argparse
+import asyncio
+import sys
+import textwrap
+
+from weather_station import db
+from weather_station.integrations.aqara.client import AqaraClient
+from weather_station.integrations.aqara.services import with_aqara_client
+
+cli = argparse.ArgumentParser(description="Perform operations against the Aqara API")
+subparsers = cli.add_subparsers(dest="subcommand")
+
+###########
+# Helpers #
+###########
+
+
+def subcommand(
+    arguments: list | None = None, *, parent=subparsers, name: str | None = None
+):
+    def decorator(func):
+        _name = name or func.__name__.replace("_", "-")
+        description = textwrap.dedent(func.__doc__).strip if func.__doc__ else ""
+        parser = parent.add_parser(_name, description=description)
+        for args, kwargs in arguments or []:
+            parser.add_argument(*args, **kwargs)
+        parser.set_defaults(func=func)
+        func.parser = parser
+        return func
+
+    return decorator
+
+
+def argument(*args, **kwargs):
+    return args, kwargs
+
+
+##################
+# Aqara commands #
+##################
+
+
+@subcommand(
+    [argument("--account-id", "-a", type=int, help="Account id", required=True)]
+)
+async def aqara(**kwargs):
+    sys.exit(aqara.parser.print_help())
+
+
+aqara_parsers = aqara.parser.add_subparsers(dest="aqara_command")
+
+
+@subcommand(parent=aqara_parsers)
+async def devices(**kwargs):
+    sys.exit(devices.parser.print_help())
+
+
+aqara_devices_parsers = devices.parser.add_subparsers(dest="aqara_devices_command")
+
+
+@subcommand(parent=aqara_devices_parsers, name="list")
+@with_aqara_client
+async def list_aqara_devices(client: AqaraClient, *, account_id: int, **kwargs) -> None:
+    """
+    List all devices registered to the account.
+    """
+
+    print(f"{'Name':32s} {'Model':22s} ID")
+    for device in await client.get_all_devices():
+        print(f"{device.device_name:32s} {device.model:22s} {device.did}")
+
+
+@subcommand(
+    [argument("model", help="Model identifier")],
+    parent=aqara_devices_parsers,
+    name="resources",
+)
+@with_aqara_client
+async def list_aqara_device_resources(
+    client: AqaraClient, *, account_id: int, **kwargs
+) -> None:
+    """
+    List all devices registered to the account.
+    """
+
+    model = args.model
+
+    for resource in await client.get_device_resources(model=model):
+        print()
+        print(f"Name.......: {resource.name}")
+        print(f"ID.........: {resource.resource_id}")
+        print(f"Description: {resource.description}")
+
+
+args = cli.parse_args()
+
+
+@db.setup()
+async def main(args) -> None:
+    await args.func(**vars(args))
+
+
+if args.subcommand:
+    try:
+        asyncio.run(main(args))
+    except KeyboardInterrupt:
+        pass
+else:
+    cli.print_help()

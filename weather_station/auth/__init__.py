@@ -9,7 +9,7 @@ from .models import Session
 
 
 async def get_session(session_id: str = Cookie(None)) -> Optional[Session]:
-    return await queries.get_session(session_key=session_id) if session_id else None
+    return await queries.get_session(key=session_id) if session_id else None
 
 
 async def require_login(

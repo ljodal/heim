@@ -41,6 +41,10 @@ class QueryDeviceInfoData(TypedDict, total=False):
     pageSize: int
 
 
+class QueryResourceInfoData(TypedDict):
+    model: str
+
+
 class FetchResourceHistoryData(TypedDict):
     subjectId: str
     resourceIds: list[str]
@@ -52,6 +56,7 @@ Intent = Union[
     Literal["config.auth.getToken"],
     Literal["config.auth.refreshToken"],
     Literal["query.device.info"],
+    Literal["query.resource.info"],
     Literal["fetch.resource.history"],
 ]
 
@@ -60,6 +65,7 @@ IntentData = Union[
     GetTokenData,
     RefreshTokenData,
     QueryDeviceInfoData,
+    QueryResourceInfoData,
     FetchResourceHistoryData,
 ]
 
@@ -95,7 +101,7 @@ class RefreshTokenResponse(pydantic.BaseModel):
 
 
 class DeviceInfo(pydantic.BaseModel):
-    parent_id: Optional[str]
+    parent_did: Optional[str]
     position_id: str
     create_time: datetime
     update_time: datetime
@@ -119,10 +125,33 @@ class QueryDeviceInfoResponse(pydantic.BaseModel):
         alias_generator = to_camel
 
 
-class ResourceHistoryPoint(pydantic.BaseModel):
-    time_stamp: datetime
+class ResourceInfo(pydantic.BaseModel):
+    enums: Optional[str]
     resource_id: str
-    value: str
+    min_value: Optional[int]
+    unit: int
+    access: Optional[int]
+    max_value: Optional[int]
+    default_value: Optional[str]
+    name: str
+    description: str
+    model: str
+
+    class Config:
+        alias_generator = to_camel
+
+
+class QueryResourceInfoResponse(pydantic.BaseModel):
+    resources: list[ResourceInfo]
+
+    class Config:
+        alias_generator = to_camel
+
+
+class ResourceHistoryPoint(pydantic.BaseModel):
+    timestamp: datetime = pydantic.Field(alias="timeStamp")
+    resource_id: str
+    value: int
     subject_id: str
 
     class Config:
