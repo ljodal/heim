@@ -9,37 +9,6 @@ from .models import AqaraAccount
 ######################
 
 
-@db.transaction()
-async def create_aqara_sensor(
-    *, id: int, aqara_account_id: int, name: str, location_id: int
-) -> int:
-
-    account_id: int = await db.fetchval(
-        "SELECT account_id FROM aqara_account WHERE id = $1",
-        aqara_account_id,
-    )
-
-    sensor_id: int = await db.fetchval(
-        """
-        INSERT INTO sensor (account_id, location_id, name)
-        VALUES ($1, $2, $3) RETURNING id
-        """,
-        account_id,
-        location_id,
-        name,
-    )
-
-    return await db.fetchval(
-        """
-        INSERT INTO aqara_sensor (aqara_account_id, sensor_id, name)
-        VALUES ($1, $2, $3) RETURNING id
-        """,
-        account_id,
-        sensor_id,
-        name,
-    )
-
-
 async def create_aqara_account(
     *,
     account_id: int,
@@ -52,7 +21,9 @@ async def create_aqara_account(
         """
         INSERT INTO aqara_account (
             account_id, username, access_token, refresh_token, expires_at
-        ) VALUES ($1, $2, $3, $4, $5) RETURNING id
+        )
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING id
         """,
         account_id,
         username,
@@ -106,6 +77,44 @@ async def update_aqara_account(account: AqaraAccount, /, **updates) -> AqaraAcco
 #####################
 
 
+@db.transaction()
+async def create_aqara_sensor(
+    *, account_id: int, name: str, location_id: int, model: str, aqara_id: str
+) -> int:
+
+    aqara_account_id: int = await db.fetchval(
+        "SELECT id FROM aqara_account WHERE account_id = $1",
+        account_id,
+    )
+
+    sensor_id: int = await db.fetchval(
+        """
+        INSERT INTO sensor (account_id, location_id, name)
+        VALUES ($1, $2, $3)
+        RETURNING id
+        """,
+        account_id,
+        location_id,
+        name,
+    )
+
+    await db.execute(
+        """
+        INSERT INTO aqara_sensor (
+            aqara_account_id, sensor_id, name, sensor_type, aqara_id
+        )
+        VALUES ($1, $2, $3, $4, $5)
+        """,
+        aqara_account_id,
+        sensor_id,
+        name,
+        model,
+        aqara_id,
+    )
+
+    return sensor_id
+
+
 async def get_aqara_sensor(
     *, account_id: int, sensor_id: int
 ) -> tuple[str, str, Optional[datetime]]:
@@ -114,4 +123,22 @@ async def get_aqara_sensor(
     latest measurement we have from the sensor.
     """
 
-    raise NotImplementedError
+    aqara_id, model, last_update_time = await db.fetchrow(
+        """
+        SELECT
+            aqara_id,
+            sensor_type,
+            (
+                SELECT MAX(measured_at)
+                FROM sensor_measurement
+                WHERE sensor_id=sensor_id
+            )
+        FROM aqara_sensor s
+        JOIN aqara_account a ON s.aqara_account_id = a.id
+        WHERE a.id = $1 AND sensor_id = $2
+        """,
+        account_id,
+        sensor_id,
+    )
+
+    return aqara_id, model, last_update_time

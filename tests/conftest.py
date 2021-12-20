@@ -7,7 +7,7 @@ import asyncpg  # type: ignore
 import pytest
 
 from weather_station import db
-from weather_station.accounts.queries import create_account
+from weather_station.accounts.queries import create_account, create_location
 from weather_station.auth.models import Session
 from weather_station.auth.queries import create_session
 
@@ -79,6 +79,11 @@ def password() -> str:
 @pytest.fixture
 async def account_id(connection, username: str, password: str) -> int:
     return await create_account(username=username, password=password)
+
+
+@pytest.fixture
+async def location_id(connection, account_id: int) -> int:
+    return await create_location(account_id=account_id, name="Test location")
 
 
 ############

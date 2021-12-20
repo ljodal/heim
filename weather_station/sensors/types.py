@@ -1,7 +1,7 @@
 import enum
 
 
-class Attribute(enum.Enum):
+class Attribute(str, enum.Enum):
     AIR_PRESSURE = "air pressure"
     AIR_TEMPERATURE = "air temperature"
     AIR_TEMPERATURE_MAX = "air temperature max"

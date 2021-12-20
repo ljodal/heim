@@ -25,6 +25,8 @@ ipython = "^7.30.1"
 types-croniter = "^1.0.3"
 pytest = "^6.2.5"
 pytest-asyncio = "^0.16.0"
+pytest-socket = "^0.4.1"
+pytest-mock = "^3.6.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -36,3 +38,7 @@ profile = "black"
 [tool.mypy]
 python_version = "3.10"
 plugins = ["pydantic.mypy"]
+
+[tool.pytest.ini_options]
+addopts = "--disable-socket --allow-unix-socket"
+

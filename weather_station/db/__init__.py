@@ -21,6 +21,10 @@ current_connection: ContextVar[asyncpg.Connection] = ContextVar("connection")
 
 thread_local = threading.local()
 
+SERVER_SETTINGS = {
+    "timezone": "UTC",
+}
+
 
 @asynccontextmanager
 async def setup() -> AsyncIterator[None]:
@@ -28,7 +32,7 @@ async def setup() -> AsyncIterator[None]:
     Configure database connectivity with a single connection.
     """
 
-    con = await asyncpg.connect()
+    con = await asyncpg.connect(server_settings=SERVER_SETTINGS)
     try:
         await initialize_connection(con)
         with set_connection(con):
@@ -43,7 +47,7 @@ async def setup_pool() -> AsyncIterator[None]:
     Configure database connectivity with a connection pool.
     """
 
-    pool = await asyncpg.create_pool()
+    pool = await asyncpg.create_pool(server_settings=SERVER_SETTINGS)
     thread_local.connection_pool = pool
     try:
         yield
@@ -122,7 +126,7 @@ async def executemany(
     sql: str, args: Iterable[Sequence], *, timeout: Optional[float] = None
 ) -> str:
     async with connection() as con:
-        return await con.execute(sql, args, timeout=timeout)
+        return await con.executemany(sql, args, timeout=timeout)
 
 
 @overload
