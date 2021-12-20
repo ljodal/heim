@@ -22,3 +22,10 @@ async def create_location(*, account_id: int, name: str) -> int:
         account_id,
         name,
     )
+
+
+async def get_locations(*, account_id: int) -> list[tuple[int, str]]:
+
+    return await db.fetch(
+        "SELECT id, name FROM location WHERE account_id = $1", account_id
+    )

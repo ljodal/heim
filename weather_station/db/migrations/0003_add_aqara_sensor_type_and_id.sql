@@ -6,5 +6,4 @@ create type aqara_sensor_type as enum (
 );
 
 alter table aqara_sensor
-    add column sensor_type aqara_sensor_type not null,
-    add column aqara_id varchar not null;
+    add column sensor_type aqara_sensor_type not null;
