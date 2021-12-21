@@ -52,7 +52,7 @@ async def task_started(*, task_id: int) -> None:
 
 async def task_finished(*, task_id: int) -> None:
     await db.execute(
-        "UPDATE task SET finished_at=clock_timestamp()() WHERE id = $1", task_id
+        "UPDATE task SET finished_at=clock_timestamp() WHERE id = $1", task_id
     )
 
 

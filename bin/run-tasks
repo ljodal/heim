@@ -5,11 +5,18 @@ Apply the given migration.
 
 import argparse
 import asyncio
+import logging
 from importlib import import_module
 from pathlib import Path
 
+import structlog
+
 from weather_station import db
 from weather_station.tasks.executor import run_tasks
+
+structlog.configure(
+    wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
+)
 
 parser = argparse.ArgumentParser(description="Execute background tasks")
 parser.add_argument("--num-workers", help="Number of workers to run", default=1)

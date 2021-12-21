@@ -10,6 +10,7 @@ class Task(Protocol):
 
     name: str
     allow_skip: bool
+    atomic: bool
 
     def __call__(self, *args, **kwargs) -> Awaitable[Any]:
         ...
@@ -34,7 +35,9 @@ def get_task(*, name: str) -> Task:
     return _TASK_REGISTRY[name]
 
 
-def task(*, name: str, allow_skip: bool = False) -> Callable[[T], T]:
+def task(
+    *, name: str, allow_skip: bool = False, atomic: bool = True
+) -> Callable[[T], T]:
     """
     Decorator for declaring a task that can be executed in the background.
     """
@@ -63,7 +66,8 @@ def task(*, name: str, allow_skip: bool = False) -> Callable[[T], T]:
         func.defer = defer  # type: ignore
         func.schedule = schedule  # type: ignore
         func.name = name  # type: ignore
-        func.allow_skip = (allow_skip,)  # type: ignore
+        func.allow_skip = allow_skip  # type: ignore
+        func.atomic = atomic  # type: ignore
         return func
 
     return _inner

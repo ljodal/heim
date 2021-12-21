@@ -14,6 +14,9 @@ from typing import (
 )
 
 import asyncpg  # type: ignore
+import structlog
+
+logger = structlog.get_logger()
 
 T = TypeVar("T", bound=asyncpg.Record)
 
@@ -63,9 +66,13 @@ def set_connection(con: asyncpg.Connection) -> Iterator[None]:
     Set the connection for the current task
     """
 
+    logger.debug("Set current connection")
     reset_token = current_connection.set(con)
-    yield
-    current_connection.reset(reset_token)
+    try:
+        yield
+    finally:
+        logger.debug("Release current connection")
+        current_connection.reset(reset_token)
 
 
 async def initialize_connection(con: asyncpg.Connection) -> None:
@@ -86,7 +93,9 @@ async def connection() -> AsyncIterator[asyncpg.Connection]:
 
     # First try to use the connection assigned to this task
     try:
-        yield current_connection.get()
+        connection = current_connection.get()
+        logger.debug("Using existing connection")
+        yield connection
     except LookupError:
         pass
     else:
@@ -96,9 +105,11 @@ async def connection() -> AsyncIterator[asyncpg.Connection]:
     # set we populate the context variable to ensure the same connection is
     # used e.g. when within a transactin block.
     if pool := getattr(thread_local, "connection_pool", None):
+        logger.debug("Leasing connection from pool")
         async with pool.acquire() as con:
             with set_connection(con):
                 yield con
+        logger.debug("Released connection to pool")
     else:
         raise RuntimeError(
             "No connection or connection pool configured for current task"

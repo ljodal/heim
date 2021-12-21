@@ -28,7 +28,7 @@ MODEL_TO_RESOURCE_MAPPING: dict[str, dict[str, Attribute]] = {
 }
 
 
-@task(name="update-aqara-sensor-data", allow_skip=True)
+@task(name="update-aqara-sensor-data", allow_skip=True, atomic=False)
 @with_aqara_client
 async def update_sensor_data(
     client: AqaraClient,
