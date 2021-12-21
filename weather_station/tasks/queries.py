@@ -6,7 +6,7 @@ from croniter import croniter
 from .. import db
 
 
-async def schedule_task(
+async def queue_task(
     *, name: str, arguments: dict[str, Any], run_at: datetime | None
 ) -> int:
     """
@@ -66,13 +66,58 @@ async def task_failed(*, task_id: int) -> None:
 
 
 @db.transaction()
-async def schedule_next_task(*, schedule_id: int, previous: datetime) -> None:
+async def create_scheduled_task(
+    *, name: str, arguments: dict[str, Any], cron_expression: str
+) -> int:
+    """
+    Create a scheduled task and queue it's next execution.
+    """
+
+    schedule_id: int = await db.fetchval(
+        """
+        INSERT INTO scheduled_task (name, arguments, expression, is_enabled)
+        VALUES ($1, $2, $3, false)
+        RETURNING id;
+        """,
+        name,
+        arguments,
+        cron_expression,
+    )
+
+    run_at = croniter(cron_expression, datetime.now(timezone.utc)).get_next(datetime)
+
+    task_id: int = await db.fetchval(
+        """
+        INSERT INTO task (name, arguments, from_schedule_id, run_at)
+        VALUES ($1, $2, $3, $4)
+        RETURNING id
+        """,
+        name,
+        arguments,
+        schedule_id,
+        run_at,
+    )
+
+    await db.execute(
+        "UPDATE scheduled_task SET next_task_id=$1, is_enabled=true WHERE id = $2",
+        task_id,
+        schedule_id,
+    )
+
+    return schedule_id
+
+
+@db.transaction()
+async def queue_next_task(
+    *, schedule_id: int, previous: Optional[datetime] = None
+) -> None:
 
     name, arguments, cron_expression = await db.fetchrow(
         "SELECT name, arguments, expression FROM scheduled_task WHERE id = $1",
         schedule_id,
     )
 
+    previous = previous or datetime.now(timezone.utc)
     run_at = croniter(cron_expression, previous).get_next(datetime)
 
     task_id: int = await db.fetchval(
@@ -81,8 +126,10 @@ async def schedule_next_task(*, schedule_id: int, previous: datetime) -> None:
         VALUES ($1, $2, $3, $4)
         RETURNING id
         """,
-        run_at,
+        name,
+        arguments,
         schedule_id,
+        run_at,
     )
 
     await db.execute(

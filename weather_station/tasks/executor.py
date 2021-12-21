@@ -1,12 +1,13 @@
 import asyncio
+from datetime import datetime, timezone
 
 import structlog
 
 from .. import db
-from .base import call_task
+from .base import get_task
 from .queries import (
     get_next_task,
-    schedule_next_task,
+    queue_next_task,
     task_failed,
     task_finished,
     task_started,
@@ -24,6 +25,8 @@ async def run_tasks() -> None:
         if not await run_next_task():
             await asyncio.sleep(1)
 
+        return
+
 
 @db.transaction()
 async def run_next_task() -> bool:
@@ -31,12 +34,14 @@ async def run_next_task() -> bool:
     Run the next pending task.
     """
 
-    if task := await get_next_task():
-        task_id, name, arguments, run_at, from_schedule_id = task
+    if _task := await get_next_task():
+        task_id, name, arguments, run_at, from_schedule_id = _task
+        logger.info("Executing task", task_id=task_id, task_name=name)
+        task = get_task(name=name)
         await task_started(task_id=task_id)
         try:
             async with db.transaction():
-                await call_task(name=name, arguments=arguments)
+                await task(**arguments)
         except asyncio.CancelledError:
             raise
         except Exception:
@@ -47,7 +52,12 @@ async def run_next_task() -> bool:
         else:
             await task_finished(task_id=task_id)
             if from_schedule_id:
-                await schedule_next_task(schedule_id=from_schedule_id, previous=run_at)
+                await queue_next_task(
+                    schedule_id=from_schedule_id,
+                    previous=(
+                        run_at if not task.allow_skip else datetime.now(timezone.utc)
+                    ),
+                )
 
         return True
 

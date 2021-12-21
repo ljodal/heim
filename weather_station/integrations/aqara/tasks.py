@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from typing import Optional
 
 from ...sensors.queries import save_measurements
 from ...sensors.types import Attribute
@@ -27,10 +28,14 @@ MODEL_TO_RESOURCE_MAPPING: dict[str, dict[str, Attribute]] = {
 }
 
 
-@task(name="fetch-aqara-sensor-data")
+@task(name="update-aqara-sensor-data", allow_skip=True)
 @with_aqara_client
 async def update_sensor_data(
-    client: AqaraClient, *, account_id: int, sensor_id: int
+    client: AqaraClient,
+    *,
+    account_id: int,
+    sensor_id: int,
+    from_time: Optional[datetime] = None,
 ) -> None:
     """
     Load and save measurements for the given sensor.
@@ -43,8 +48,8 @@ async def update_sensor_data(
     # Accoring to the Aqara documentation historical data is available 7 days
     # back, so we default to loading as far back as we can if we have no
     # previous data for the sensor.
-    if last_update_time is None:
-        last_update_time = datetime.now(timezone.utc) - timedelta(days=7)
+    if from_time is None:
+        from_time = last_update_time or datetime.now(timezone.utc) - timedelta(days=7)
 
     resource_mapping = MODEL_TO_RESOURCE_MAPPING[model]
 
@@ -54,7 +59,7 @@ async def update_sensor_data(
         result = await client.get_resource_history(
             device_id=aqara_id,
             resource_ids=resource_mapping,
-            from_time=last_update_time,
+            from_time=from_time,
             scan_id=result.scan_id if result else None,
         )
         if not result.data:
@@ -71,3 +76,7 @@ async def update_sensor_data(
                 for measurement in result.data
             ),
         )
+
+        from_time = max(
+            measurement.timestamp for measurement in result.data
+        ) + timedelta(milliseconds=1)

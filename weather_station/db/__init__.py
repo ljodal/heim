@@ -47,7 +47,9 @@ async def setup_pool() -> AsyncIterator[None]:
     Configure database connectivity with a connection pool.
     """
 
-    pool = await asyncpg.create_pool(server_settings=SERVER_SETTINGS)
+    pool = await asyncpg.create_pool(
+        server_settings=SERVER_SETTINGS, init=initialize_connection
+    )
     thread_local.connection_pool = pool
     try:
         yield

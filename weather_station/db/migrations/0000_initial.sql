@@ -17,28 +17,6 @@ create table location (
 /*
  * Sensor and forecast data
  */
-create table sensor (
-    id integer primary key generated always as identity,
-    account_id integer not null references account (id),
-    location_id integer not null references location (id),
-    name varchar
-);
-
-create table forecast (
-    id integer primary key generated always as identity,
-    account_id integer not null references account (id),
-    location_id integer not null references location (id),
-    name varchar
-);
-
-create table forecast_instance (
-    id integer primary key generated always as identity,
-    forecast_id integer references forecast (id),
-    created_at timestamp with time zone not null,
-    -- Constraints
-    constraint forecast_instance_unique unique (forecast_id, created_at)
-);
-
 create type attribute as enum (
     'air temperature',
     'air temperature min',
@@ -56,6 +34,13 @@ create type attribute as enum (
     'power'
 );
 
+create table sensor (
+    id integer primary key generated always as identity,
+    account_id integer not null references account (id),
+    location_id integer not null references location (id),
+    name varchar
+);
+
 create table sensor_measurement (
     sensor_id integer references sensor (id),
     attribute attribute not null,
@@ -63,6 +48,21 @@ create table sensor_measurement (
     value integer not null,
     -- Constraints
     constraint sensor_measurement_unique unique (sensor_id, attribute, measured_at)
+);
+
+create table forecast (
+    id integer primary key generated always as identity,
+    account_id integer not null references account (id),
+    location_id integer not null references location (id),
+    name varchar
+);
+
+create table forecast_instance (
+    id integer primary key generated always as identity,
+    forecast_id integer references forecast (id),
+    created_at timestamp with time zone not null,
+    -- Constraints
+    constraint forecast_instance_unique unique (forecast_id, created_at)
 );
 
 create table forecast_value (

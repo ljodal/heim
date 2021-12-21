@@ -13,6 +13,7 @@ from weather_station.accounts.queries import create_location, get_locations
 from weather_station.integrations.aqara.client import AqaraClient
 from weather_station.integrations.aqara.queries import create_aqara_sensor
 from weather_station.integrations.aqara.services import with_aqara_client
+from weather_station.integrations.aqara.tasks import update_sensor_data
 
 cli = argparse.ArgumentParser(description="Perform operations against the Aqara API")
 subparsers = cli.add_subparsers(dest="subcommand")
@@ -160,13 +161,19 @@ async def add_aqara_device(
     if device is None:
         raise RuntimeError("Unknown device")
 
-    await create_aqara_sensor(
-        account_id=account_id,
-        name=name,
-        location_id=location_id,
-        model=device.model,
-        aqara_id=aqara_id,
-    )
+    async with db.transaction():
+        sensor_id = await create_aqara_sensor(
+            account_id=account_id,
+            name=name,
+            location_id=location_id,
+            model=device.model,
+            aqara_id=aqara_id,
+        )
+
+        await update_sensor_data.schedule(  # type: ignore
+            arguments={"account_id": account_id, "sensor_id": sensor_id},
+            expression="*/5 * * * *",
+        )
 
 
 #########

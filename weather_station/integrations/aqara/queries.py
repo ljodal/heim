@@ -135,7 +135,7 @@ async def get_aqara_sensor(
             )
         FROM aqara_sensor s
         JOIN aqara_account a ON s.aqara_account_id = a.id
-        WHERE a.id = $1 AND sensor_id = $2
+        WHERE a.account_id = $1 AND sensor_id = $2
         """,
         account_id,
         sensor_id,

@@ -1,12 +1,16 @@
 from datetime import datetime
 from typing import Any, Awaitable, Callable, Optional, Protocol, TypeVar, cast
 
-from .queries import schedule_task
+from .queries import create_scheduled_task, queue_task
 
 T = TypeVar("T", bound=Callable[..., Awaitable[Any]])
 
 
 class Task(Protocol):
+
+    name: str
+    allow_skip: bool
+
     def __call__(self, *args, **kwargs) -> Awaitable[Any]:
         ...
 
@@ -15,20 +19,22 @@ class Task(Protocol):
     ) -> int:
         ...
 
+    async def schedule(self, *, arguments: dict[str, Any], cron_expression: str) -> int:
+        ...
+
 
 _TASK_REGISTRY: dict[str, Task] = {}
 
 
-async def call_task(*, name: str, arguments: dict[str, Any]) -> None:
+def get_task(*, name: str) -> Task:
     """
-    Call a task by name.
+    Get a task by name
     """
 
-    _task = _TASK_REGISTRY[name]
-    await _task(**arguments)
+    return _TASK_REGISTRY[name]
 
 
-def task(*, name: str) -> Callable[[T], T]:
+def task(*, name: str, allow_skip: bool = False) -> Callable[[T], T]:
     """
     Decorator for declaring a task that can be executed in the background.
     """
@@ -40,12 +46,24 @@ def task(*, name: str) -> Callable[[T], T]:
         Schedule the task for execution at a later time.
         """
 
-        return await schedule_task(name=name, arguments=arguments, run_at=run_at)
+        return await queue_task(name=name, arguments=arguments, run_at=run_at)
+
+    async def schedule(*, arguments: dict[str, Any], cron_expression: str) -> int:
+        """
+        Create a schedule to execute this task.
+        """
+
+        return await create_scheduled_task(
+            name=name, arguments=arguments, cron_expression=cron_expression
+        )
 
     def _inner(func: T) -> T:
         assert name not in _TASK_REGISTRY
         _TASK_REGISTRY[name] = cast(Task, func)
         func.defer = defer  # type: ignore
+        func.schedule = schedule  # type: ignore
+        func.name = name  # type: ignore
+        func.allow_skip = (allow_skip,)  # type: ignore
         return func
 
     return _inner
