@@ -26,3 +26,13 @@ async def create_yr_forecast(
     )
 
     return forecast_id
+
+
+async def get_forecast_coordinate(*, forecast_id: int) -> tuple[float, float]:
+    """
+    Get the coordinate for the given forecast.
+    """
+
+    return await db.fetchval(
+        "SELECT coordinate FROM yr_forecast WHERE forecast_id = $1", forecast_id
+    )

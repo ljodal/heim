@@ -25,7 +25,7 @@ async def create_forecast_instance(
     *,
     forecast_id: int,
     forecast_time: datetime,
-    attributes: dict[Attribute, list[tuple[datetime, float]]]
+    values: list[tuple[Attribute, datetime, int]]
 ) -> None:
     """
     Insert a forecast instance.
@@ -34,21 +34,29 @@ async def create_forecast_instance(
     forecast_instance_id: int = await db.fetchval(
         """
         INSERT INTO forecast_instance (forecast_id, created_at)
-        VALUES ($1, $2) RETURNING id
+        VALUES ($1, $2)
+        ON CONFLICT (forecast_id, created_at) DO NOTHING
+        RETURNING id
         """,
         forecast_id,
         forecast_time,
     )
+
+    # If the forecast instance already existed the query above returns None.
+    # We do not want to update an existing forecast instance, so we return
+    # early.
+    if forecast_instance_id is None:
+        return
 
     await db.executemany(
         """
         INSERT INTO forecast_value (
             forecast_instance_id, attribute, measured_at, value
         ) VALUES ($1, $2, $3, $4)
+        ON CONFLICT (forecast_instance_id, attribute, measured_at) DO NOTHING
         """,
         [
             (forecast_instance_id, attribute, timestamp, value)
-            for attribute, values in attributes.items()
-            for timestamp, value in values
+            for attribute, timestamp, value in values
         ],
     )
