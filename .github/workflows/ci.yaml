@@ -33,7 +33,7 @@ jobs:
       - name: Cache Packages
         uses: actions/cache@v2
         with:
-          path: "${{ env.GITHUB_WORKSPACE }}/.venv"
+          path: "${{ github.workspace }}/.venv"
           key: "poetry-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}"
       - name: Set up Python ${{ env.PYTHON_VERSION }}
         uses: actions/setup-python@v2
@@ -49,8 +49,8 @@ jobs:
       - name: Install Dependencies
         run: |
           poetry install
-          echo "${{ env.GITHUB_WORKSPACE }}/.venv/bin" >> $GITHUB_PATH
-          echo "VIRTUAL_ENV=${{ env.GITHUB_WORKSPACE }}/.venv" >> $GITHUB_ENV
+          echo "${{ github.workspace }}/.venv/bin" >> $GITHUB_PATH
+          echo "VIRTUAL_ENV=${{ github.workspace }}/.venv" >> $GITHUB_ENV
       - name: Run mypy
         run: |
           env
