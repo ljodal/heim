@@ -8,7 +8,7 @@ env:
   POETRY_URL: https://install.python-poetry.org
 
 jobs:
-  use_cache:
+  linters:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
