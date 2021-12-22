@@ -3,9 +3,9 @@ name: Run linters to check project
 on: push
 
 env:
-  PYTHON_VERSION: 3.10
-  POETRY_VERSION: 1.1.12
-  POETRY_URL: https://install.python-poetry.org
+  PYTHON_VERSION: "3.10"
+  POETRY_VERSION: "1.1.12"
+  POETRY_URL: "https://install.python-poetry.org"
 
 jobs:
   linters:
