@@ -21,20 +21,20 @@ jobs:
         id: cache-poetry
         uses: actions/cache@v2
         with:
-          path: ${{ env.POETRY_HOME }}
-          key: poetry-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ env.POETRY_VERSION }}
+          path: "${{ env.POETRY_HOME }}"
+          key: "poetry-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ env.POETRY_VERSION }}"
       # Poetry cache depends on OS, Python version and Poetry version.
       - name: Cache Poetry cache
         uses: actions/cache@v2
         with:
-          path: ~/.cache/pypoetry
-          key: poetry-cache-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ env.POETRY_VERSION }}
+          path: "~/.cache/pypoetry"
+          key: "poetry-cache-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ env.POETRY_VERSION }}"
       # virtualenv cache should depends on OS, Python version and `poetry.lock`.
       - name: Cache Packages
         uses: actions/cache@v2
         with:
-          path: .venv
-          key: poetry-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}
+          path: "${{ env.GITHUB_WORKSPACE }}/.venv"
+          key: "poetry-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}"
       - name: Set up Python ${{ env.PYTHON_VERSION }}
         uses: actions/setup-python@v2
         with:
@@ -49,6 +49,7 @@ jobs:
       - name: Install Dependencies
         run: |
           poetry install
-          echo "$HOME/.venv/bin" >> $GITHUB_PATH
+          echo "${{ env.GITHUB_WORKSPACE }}/.venv/bin" >> $GITHUB_PATH
+          echo "VIRTUAL_ENV=${{ env.GITHUB_WORKSPACE }}/.venv" >> $GITHUB_ENV
       - name: Run mypy
         run: mypy
