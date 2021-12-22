@@ -35,7 +35,12 @@ async def run_next_task() -> bool:
     async with db.transaction():
         if _task := await get_next_task():
             task_id, name, arguments, run_at, from_schedule_id = _task
-            logger.info("Executing task", task_id=task_id, task_name=name)
+            logger.info(
+                "Executing task",
+                task_id=task_id,
+                task_name=name,
+                task_arguments=arguments,
+            )
             task = get_task(name=name)
             await task_started(task_id=task_id)
 
@@ -80,12 +85,27 @@ async def execute_task(
                 await task(**arguments)
         else:
             await task(**arguments)
-        logger.info("Task finished", task_id=task_id, task_name=task.name)
+        logger.info(
+            "Task finished",
+            task_id=task_id,
+            task_name=task.name,
+            task_arguments=arguments,
+        )
     except asyncio.CancelledError:
-        logger.exception("Task cancelled", task_id=task_id, task_name=task.name)
+        logger.exception(
+            "Task cancelled",
+            task_id=task_id,
+            task_name=task.name,
+            task_arguments=arguments,
+        )
         await task_failed(task_id=task_id)
     except Exception:
-        logger.exception("Task failed", task_id=task_id, task_name=task.name)
+        logger.exception(
+            "Task failed",
+            task_id=task_id,
+            task_name=task.name,
+            task_arguments=arguments,
+        )
         await task_failed(task_id=task_id)
     else:
         async with db.transaction():
