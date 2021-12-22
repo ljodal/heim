@@ -13,11 +13,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Checkout typeshed (needed until mypy updates)
-        uses: actions/checkout@v2
-        with:
-          repository: python/typeshed
-          path: ../typeshed
+        submodules: true
       # Poetry cache depends on OS, Python version and Poetry version.
       - name: Cache Poetry cache
         uses: actions/cache@v2
