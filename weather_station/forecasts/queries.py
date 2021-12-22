@@ -25,7 +25,7 @@ async def create_forecast_instance(
     *,
     forecast_id: int,
     forecast_time: datetime,
-    values: list[tuple[Attribute, datetime, int]]
+    values: list[tuple[Attribute, datetime, int]],
 ) -> None:
     """
     Insert a forecast instance.
