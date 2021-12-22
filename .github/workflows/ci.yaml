@@ -5,6 +5,7 @@ on: push
 env:
   PYTHON_VERSION: "3.10"
   POETRY_VERSION: "1.1.12"
+  POETRY_HOME: "~/.poetry"
   POETRY_URL: "https://install.python-poetry.org"
 
 jobs:
@@ -15,6 +16,13 @@ jobs:
         uses: actions/checkout@v2
         with:
           submodules: true
+      # Poetry depends on OS, Python version and Poetry version.
+      - name: Cache Poetry
+        id: cache-poetry
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.POETRY_HOME }}
+          key: poetry-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ env.POETRY_VERSION }}
       # Poetry cache depends on OS, Python version and Poetry version.
       - name: Cache Poetry cache
         uses: actions/cache@v2
@@ -32,9 +40,12 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - name: Install Poetry
+        if: steps.cache-primes.outputs.cache-hit != 'true'
         run: |
           curl -sSL ${{ env.POETRY_URL }} | python - --version ${{ env.POETRY_VERSION }}
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: "Add Poetry to PATH"
+        run: |
+          echo "$POETRY_HOME/bin" >> $GITHUB_PATH
       - name: Install Dependencies
         run: poetry install
       - name: Run mypy
