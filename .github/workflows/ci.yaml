@@ -49,6 +49,6 @@ jobs:
       - name: Install Dependencies
         run: |
           poetry install
-          echo "$HOME/.venv/bin" >> $GITHU_PATH
+          echo "$HOME/.venv/bin" >> $GITHUB_PATH
       - name: Run mypy
         run: mypy
