@@ -1,6 +1,13 @@
-# Heim
-
-A home monitoring system, focused on temperature and power usage.
+<div align="center">
+    <h1>🏡<br>Heim</h1>
+    <p>A home monitoring system, focused on temperature and power usage</p>
+    <p>
+        <a title="CI Status" href="https://github.com/ljodal/heim/actions">
+        <img src="https://img.shields.io/github/workflow/status/ljodal/heim/CI/main?style=flat-square"></a>
+        <a title="Code Coverage" href="https://app.codecov.io/gh/ljodal/heim/"><img src="https://img.shields.io/codecov/c/github/ljodal/heim?style=flat-square"></a>
+        <a title="License" href="https://github.com/ljodal/heim/blob/main/LICENSE"><img src="https://img.shields.io/github/license/ljodal/heim?style=flat-square"></a>
+    </p>
+</div>
 
 ## Project setup
 
