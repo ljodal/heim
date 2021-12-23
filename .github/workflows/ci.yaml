@@ -56,4 +56,6 @@ jobs:
       - name: Ensure Postgres is ready
         run: for i in {1..5}; do pg_isready && s=0 && break || s=$? && sleep 1; done; (exit $s)
       - name: Run ${{ matrix.linter }}
-        run: pytest -v
+        run: pytest -v --cov=heim --cov-report=xml
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v2

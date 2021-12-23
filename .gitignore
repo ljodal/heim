@@ -1,3 +1,5 @@
 .venv
 .envrc
 __pycache__
+.coverage
+coverage.xml
