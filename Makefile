@@ -2,7 +2,7 @@ all : black mypy isort flake8
 
 .PHONY: black
 black:
-	black heim tests
+	black --check heim tests
 
 .PHONY: mypy
 mypy:
@@ -10,7 +10,7 @@ mypy:
 
 .PHONY: isort
 isort:
-	isort heim tests
+	isort --check-only heim tests
 
 .PHONY: flake8
 flake8:
