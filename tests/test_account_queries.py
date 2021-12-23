@@ -1,6 +1,6 @@
 import pytest
 
-from weather_station.accounts.queries import create_account, create_location
+from heim.accounts.queries import create_account, create_location
 
 pytestmark = pytest.mark.asyncio
 

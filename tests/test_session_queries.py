@@ -1,7 +1,7 @@
 import pytest
 
-from weather_station.auth.models import Session
-from weather_station.auth.queries import create_session, get_session, update_session
+from heim.auth.models import Session
+from heim.auth.queries import create_session, get_session, update_session
 
 pytestmark = pytest.mark.asyncio
 

@@ -4,7 +4,7 @@ Basic tests to ensure that the database logic works.
 
 import pytest
 
-from weather_station import db
+from heim import db
 
 pytestmark = pytest.mark.asyncio
 

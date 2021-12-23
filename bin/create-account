@@ -6,8 +6,8 @@ Apply the given migration.
 import argparse
 import asyncio
 
-from weather_station import db
-from weather_station.accounts.queries import create_account
+from heim import db
+from heim.accounts.queries import create_account
 
 parser = argparse.ArgumentParser(description="Execute background tasks")
 parser.add_argument("--username", "-u", help="Account username", required=True)

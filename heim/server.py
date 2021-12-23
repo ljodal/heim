@@ -15,7 +15,7 @@ def load_apps(path: Path) -> None:
         module_name = f"{module_path}.{api_module.stem}"
 
         # Register the module
-        module = import_module(module_name, package="weather_station")
+        module = import_module(module_name, package="heim")
         if router := getattr(module, "router", None):
             app.include_router(router)
 

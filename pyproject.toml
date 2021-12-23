@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "weather-station"
+name = "heim"
 version = "0.1.0"
 description = ""
 authors = ["Sigurd Ljødal <sigurd@ljodal.no>"]
@@ -33,19 +33,19 @@ requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.black]
-src = ["weather_station", "tests"]
+src = ["heim", "tests"]
 target-version = ['py310']
 
 [tool.isort]
 profile = "black"
-src_paths= ["weather_station", "test"]
+src_paths= ["heim", "test"]
 
 [tool.mypy]
 python_version = "3.10"
 custom_typeshed_dir = "typeshed"
-files = ["weather_station", "tests"]
+files = ["heim", "tests"]
 plugins = ["pydantic.mypy"]
 
 [tool.pytest.ini_options]
 addopts = "--disable-socket --allow-unix-socket"
-
+testpaths = ["tests"]

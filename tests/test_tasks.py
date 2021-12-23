@@ -2,8 +2,8 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from weather_station.tasks import task
-from weather_station.tasks.queries import get_next_task
+from heim.tasks import task
+from heim.tasks.queries import get_next_task
 
 pytestmark = pytest.mark.asyncio
 

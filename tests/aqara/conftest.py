@@ -2,12 +2,12 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from weather_station.accounts.utils import get_random_string
-from weather_station.integrations.aqara.queries import (
+from heim.accounts.utils import get_random_string
+from heim.integrations.aqara.queries import (
     create_aqara_account,
     create_aqara_sensor,
 )
-from weather_station.integrations.aqara.tasks import MODEL_TO_RESOURCE_MAPPING
+from heim.integrations.aqara.tasks import MODEL_TO_RESOURCE_MAPPING
 
 
 @pytest.fixture

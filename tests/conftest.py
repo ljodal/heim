@@ -6,10 +6,10 @@ from typing import AsyncIterator, Iterator
 import asyncpg  # type: ignore
 import pytest
 
-from weather_station import db
-from weather_station.accounts.queries import create_account, create_location
-from weather_station.auth.models import Session
-from weather_station.auth.queries import create_session
+from heim import db
+from heim.accounts.queries import create_account, create_location
+from heim.auth.models import Session
+from heim.auth.queries import create_session
 
 #######################
 # Basic project setup #
@@ -21,12 +21,12 @@ def setup_db() -> Iterator[None]:
     def run(*args: str | pathlib.Path) -> None:
         subprocess.run(args, check=True)
 
-    os.environ["PGDATABASE"] = "weather_station_test"
-    run("createdb", "weather_station_test")
+    os.environ["PGDATABASE"] = "heim_test"
+    run("createdb", "heim_test")
     try:
         project_root = pathlib.Path(__file__).parent.parent
         migrate_script = project_root / "bin" / "migrate"
-        migrations_dir = project_root / "weather_station" / "db" / "migrations"
+        migrations_dir = project_root / "heim" / "db" / "migrations"
         print("Applying migrations")
         for migrations_file in sorted(migrations_dir.glob("*.sql")):
             print(f"Applying {migrations_file}")
@@ -34,7 +34,7 @@ def setup_db() -> Iterator[None]:
 
         yield
     finally:
-        run("dropdb", "weather_station_test")
+        run("dropdb", "heim_test")
 
 
 @pytest.fixture(scope="function")

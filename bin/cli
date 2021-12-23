@@ -8,12 +8,12 @@ import asyncio
 import sys
 import textwrap
 
-from weather_station import db
-from weather_station.accounts.queries import create_location, get_locations
-from weather_station.integrations.aqara.client import AqaraClient
-from weather_station.integrations.aqara.queries import create_aqara_sensor
-from weather_station.integrations.aqara.services import with_aqara_client
-from weather_station.integrations.aqara.tasks import update_sensor_data
+from heim import db
+from heim.accounts.queries import create_location, get_locations
+from heim.integrations.aqara.client import AqaraClient
+from heim.integrations.aqara.queries import create_aqara_sensor
+from heim.integrations.aqara.services import with_aqara_client
+from heim.integrations.aqara.tasks import update_sensor_data
 
 cli = argparse.ArgumentParser(description="Perform operations against the Aqara API")
 subparsers = cli.add_subparsers(dest="subcommand")

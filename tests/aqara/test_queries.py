@@ -2,9 +2,9 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from weather_station import db
-from weather_station.accounts.utils import get_random_string
-from weather_station.integrations.aqara.queries import (
+from heim import db
+from heim.accounts.utils import get_random_string
+from heim.integrations.aqara.queries import (
     create_aqara_account,
     create_aqara_sensor,
     get_aqara_sensor,

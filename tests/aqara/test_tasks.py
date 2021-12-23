@@ -3,13 +3,13 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from pytest_mock import MockerFixture
 
-from weather_station import db
-from weather_station.integrations.aqara.client import AqaraClient
-from weather_station.integrations.aqara.tasks import (
+from heim import db
+from heim.integrations.aqara.client import AqaraClient
+from heim.integrations.aqara.tasks import (
     get_aqara_sensor,
     update_sensor_data,
 )
-from weather_station.integrations.aqara.types import (
+from heim.integrations.aqara.types import (
     QueryResourceHistoryResult,
     ResourceHistoryPoint,
 )

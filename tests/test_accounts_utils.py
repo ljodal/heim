@@ -1,4 +1,4 @@
-from weather_station.accounts.utils import compare_password, hash_password
+from heim.accounts.utils import compare_password, hash_password
 
 
 def test_hash_password(password: str) -> None:

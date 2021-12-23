@@ -11,8 +11,8 @@ from pathlib import Path
 
 import structlog
 
-from weather_station import db
-from weather_station.tasks.executor import run_tasks
+from heim import db
+from heim.tasks.executor import run_tasks
 
 structlog.configure(
     wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
@@ -29,17 +29,17 @@ def load_tasks(path: Path) -> None:
 
         # Construct the name of the module
         relative_path = api_module.relative_to(
-            Path(__file__).parent.parent / "weather_station"
+            Path(__file__).parent.parent / "heim"
         )
         module_path = ".".join(p.name for p in reversed(relative_path.parents))
         module_name = f"{module_path}.{api_module.stem}"
 
         # Import the module
-        import_module(module_name, package="weather_station")
+        import_module(module_name, package="heim")
 
 
-load_tasks(Path(__file__).parent.parent / "weather_station")
-load_tasks(Path(__file__).parent.parent / "weather_station" / "integrations")
+load_tasks(Path(__file__).parent.parent / "heim")
+load_tasks(Path(__file__).parent.parent / "heim" / "integrations")
 
 
 @db.setup_pool()
