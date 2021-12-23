@@ -60,3 +60,18 @@ async def create_forecast_instance(
             for attribute, timestamp, value in values
         ],
     )
+
+
+async def get_forecast_coordinate(*, forecast_id: int) -> tuple[float, float]:
+    """
+    Get the coordinate for the given forecast.
+    """
+
+    return await db.fetchval(
+        """
+        SELECT l.coordinate
+        FROM forecast f JOIN location l ON l.id = f.location_id
+        WHERE f.id = $1
+        """,
+        forecast_id,
+    )

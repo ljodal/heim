@@ -39,6 +39,9 @@ async def get_applied_migrations(*, con: asyncpg.Connection) -> list[str]:
 
 async def apply_migration(*, path: Path, con: asyncpg.Connection) -> None:
     name = path.stem
+
+    print(f"Applying migration {name}")
+
     await con.execute(
         "INSERT INTO MIGRATIONS (name, applied_at) VALUES ($1, now())", name
     )

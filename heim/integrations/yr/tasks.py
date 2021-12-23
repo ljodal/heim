@@ -3,11 +3,10 @@ from decimal import Decimal
 from email.utils import parsedate_to_datetime
 from typing import Callable
 
-from ...forecasts.queries import create_forecast_instance
+from ...forecasts.queries import create_forecast_instance, get_forecast_coordinate
 from ...sensors.types import Attribute
 from ...tasks import task
 from .client import get_location_forecast
-from .queries import get_forecast_coordinate
 from .types import ForecastResponse
 
 ATTRIBUTE_MAP: tuple[tuple[Attribute, str, Callable[[Decimal], int]], ...] = (

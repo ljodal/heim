@@ -14,13 +14,19 @@ async def create_account(*, username: str, password: str) -> int:
     )
 
 
-async def create_location(*, account_id: int, name: str) -> int:
+async def create_location(
+    *, account_id: int, name: str, coordinate: tuple[float, float]
+) -> int:
     """Create a new location"""
 
     return await db.fetchval(
-        "INSERT INTO location (account_id, name) VALUES ($1, $2) RETURNING id",
+        """
+        INSERT INTO location (account_id, name, coordinate) VALUES ($1, $2, $3)
+        RETURNING id
+        """,
         account_id,
         name,
+        coordinate,
     )
 
 

@@ -92,8 +92,17 @@ async def account_id(connection, username: str, password: str) -> int:
 
 
 @pytest.fixture
-async def location_id(connection, account_id: int) -> int:
-    return await create_location(account_id=account_id, name="Test location")
+def coordinate() -> tuple[float, float]:
+    return (59.9171, 10.7276)
+
+
+@pytest.fixture
+async def location_id(
+    connection, account_id: int, coordinate: tuple[float, float]
+) -> int:
+    return await create_location(
+        account_id=account_id, name="Test location", coordinate=coordinate
+    )
 
 
 ############
