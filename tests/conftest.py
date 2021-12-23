@@ -1,6 +1,5 @@
+import asyncio
 import os
-import pathlib
-import subprocess
 from typing import AsyncIterator, Iterator
 
 import asyncpg  # type: ignore
@@ -10,31 +9,42 @@ from heim import db
 from heim.accounts.queries import create_account, create_location
 from heim.auth.models import Session
 from heim.auth.queries import create_session
+from heim.db.setup import migrate_db
 
 #######################
 # Basic project setup #
 #######################
 
 
+async def _setup_db() -> None:
+    con = await asyncpg.connect(database="postgres")
+    try:
+        try:
+            await con.execute("CREATE DATABASE heim_test")
+        except asyncpg.exceptions.DuplicateDatabaseError:
+            pass
+        await migrate_db()
+    finally:
+        await con.close()
+
+
+async def _drop_db() -> None:
+    con = await asyncpg.connect(database="postgres")
+    try:
+        await con.execute("DROP DATABASE heim_test")
+    finally:
+        await con.close()
+
+
 @pytest.fixture(scope="session")
 def setup_db() -> Iterator[None]:
-    def run(*args: str | pathlib.Path) -> None:
-        subprocess.run(args, check=True)
-
     os.environ["PGDATABASE"] = "heim_test"
-    run("createdb", "heim_test")
-    try:
-        project_root = pathlib.Path(__file__).parent.parent
-        migrate_script = project_root / "bin" / "migrate"
-        migrations_dir = project_root / "heim" / "db" / "migrations"
-        print("Applying migrations")
-        for migrations_file in sorted(migrations_dir.glob("*.sql")):
-            print(f"Applying {migrations_file}")
-            run(migrate_script, migrations_file)
 
+    asyncio.run(_setup_db())
+    try:
         yield
     finally:
-        run("dropdb", "heim_test")
+        asyncio.run(_drop_db())
 
 
 @pytest.fixture(scope="function")

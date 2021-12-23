@@ -3,46 +3,8 @@
 Apply the given migration.
 """
 
-import argparse
-import os
-import subprocess
+import asyncio
 
-parser = argparse.ArgumentParser(description="Apply a database migration")
-parser.add_argument("file", help="Path to file containing SQL to execute")
+from heim.db.setup import migrate_db
 
-args = parser.parse_args()
-
-file_name = os.path.basename(args.file)
-migration_name, _ = os.path.splitext(file_name)
-
-assert os.path.exists(args.file), f"No such file: {args.file}"
-
-# Make sure the migrations table exist first.
-subprocess.run(
-    [
-        "psql",
-        "-c",
-        """
-        create table if not exists migrations (
-            name varchar primary key,
-            applied_at timestamp with time zone not null
-        );
-        """,
-    ],
-    check=True,
-    capture_output=True,
-)
-
-# Apply migration with psql. This replaces the current process, so the exit
-# code will be whatever psql exists with.
-os.execlp(
-    "psql",
-    "psql",
-    "--single-transaction",
-    "--set",
-    "ON_ERROR_STOP=on",
-    "-c",
-    f"insert into migrations (name, applied_at) values ('{migration_name}', now());",
-    "-f",
-    args.file,
-)
+asyncio.run(migrate_db())
