@@ -3,10 +3,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from heim.accounts.utils import get_random_string
-from heim.integrations.aqara.queries import (
-    create_aqara_account,
-    create_aqara_sensor,
-)
+from heim.integrations.aqara.queries import create_aqara_account, create_aqara_sensor
 from heim.integrations.aqara.tasks import MODEL_TO_RESOURCE_MAPPING
 
 

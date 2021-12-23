@@ -5,10 +5,7 @@ from pytest_mock import MockerFixture
 
 from heim import db
 from heim.integrations.aqara.client import AqaraClient
-from heim.integrations.aqara.tasks import (
-    get_aqara_sensor,
-    update_sensor_data,
-)
+from heim.integrations.aqara.tasks import get_aqara_sensor, update_sensor_data
 from heim.integrations.aqara.types import (
     QueryResourceHistoryResult,
     ResourceHistoryPoint,
