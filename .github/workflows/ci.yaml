@@ -1,4 +1,4 @@
-name: Run linters to check project
+name: CI
 
 on: push
 
