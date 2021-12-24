@@ -45,23 +45,27 @@ async def run_next_task() -> bool:
             await task_started(task_id=task_id)
 
             if task.atomic:
-                await execute_task(
-                    task=task,
-                    task_id=task_id,
-                    arguments=arguments,
-                    run_at=run_at,
-                    from_schedule_id=from_schedule_id,
-                    atomic=True,
+                await asyncio.shield(
+                    execute_task(
+                        task=task,
+                        task_id=task_id,
+                        arguments=arguments,
+                        run_at=run_at,
+                        from_schedule_id=from_schedule_id,
+                        atomic=True,
+                    )
                 )
 
     if _task and not task.atomic:
-        await execute_task(
-            task=task,
-            task_id=task_id,
-            arguments=arguments,
-            run_at=run_at,
-            from_schedule_id=from_schedule_id,
-            atomic=False,
+        await asyncio.shield(
+            execute_task(
+                task=task,
+                task_id=task_id,
+                arguments=arguments,
+                run_at=run_at,
+                from_schedule_id=from_schedule_id,
+                atomic=False,
+            )
         )
 
         return True
@@ -78,23 +82,16 @@ async def execute_task(
     from_schedule_id: Optional[int],
     atomic: bool,
 ) -> None:
-    @db.transaction()
-    async def _task_finished() -> None:
-        await task_finished(task_id=task_id)
-        if from_schedule_id:
-            await queue_next_task(
-                schedule_id=from_schedule_id,
-                previous=(
-                    run_at if not task.allow_skip else datetime.now(timezone.utc)
-                ),
-            )
+    """
+    Execute a single task.
+    """
 
     try:
         if atomic:
             async with db.transaction():
-                await task(**arguments)
+                await asyncio.wait_for(task(**arguments), timeout=task.timeout)
         else:
-            await task(**arguments)
+            await asyncio.wait_for(task(**arguments), timeout=task.timeout)
         logger.info(
             "Task finished",
             task_id=task_id,
@@ -108,7 +105,7 @@ async def execute_task(
             task_name=task.name,
             task_arguments=arguments,
         )
-        await asyncio.shield(task_failed(task_id=task_id))
+        await task_failed(task_id=task_id)
     except Exception:
         logger.exception(
             "Task failed",
@@ -116,6 +113,13 @@ async def execute_task(
             task_name=task.name,
             task_arguments=arguments,
         )
-        await asyncio.shield(task_failed(task_id=task_id))
+        await task_failed(task_id=task_id)
     else:
-        await asyncio.shield(_task_finished())
+        await task_finished(task_id=task_id)
+        if from_schedule_id:
+            await queue_next_task(
+                schedule_id=from_schedule_id,
+                previous=(
+                    run_at if not task.allow_skip else datetime.now(timezone.utc)
+                ),
+            )

@@ -24,6 +24,5 @@ async def get_location_forecast(
             params={"lat": round(latitude, 4), "lon": round(longitude, 4)},
             headers=headers,
         )
-        response.raise_for_status()
 
         return response

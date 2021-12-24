@@ -11,6 +11,7 @@ class Task(Protocol):
     name: str
     allow_skip: bool
     atomic: bool
+    timeout: int
 
     def __call__(self, *args, **kwargs) -> Awaitable[Any]:
         ...
@@ -36,10 +37,15 @@ def get_task(*, name: str) -> Task:
 
 
 def task(
-    *, name: str, allow_skip: bool = False, atomic: bool = True
+    *, name: str, allow_skip: bool = False, atomic: bool = True, timeout: int = 10
 ) -> Callable[[T], T]:
     """
     Decorator for declaring a task that can be executed in the background.
+
+    :param name:       A unique name for this task
+    :param allow_skip: Allow schedule steps to be skipped
+    :param atomic:     Run the task fully atomically in a transaction
+    :param timeout:    The maximum time to allow the task to execute for
     """
 
     async def defer(
@@ -68,6 +74,7 @@ def task(
         func.name = name  # type: ignore
         func.allow_skip = allow_skip  # type: ignore
         func.atomic = atomic  # type: ignore
+        func.timeout = timeout  # type: ignore
         return func
 
     return _inner
