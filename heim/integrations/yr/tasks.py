@@ -3,6 +3,8 @@ from decimal import Decimal
 from email.utils import parsedate_to_datetime
 from typing import Callable
 
+import structlog
+
 from ...forecasts.queries import create_forecast_instance, get_forecast_coordinate
 from ...sensors.types import Attribute
 from ...tasks import task
@@ -14,6 +16,8 @@ ATTRIBUTE_MAP: tuple[tuple[Attribute, str, Callable[[Decimal], int]], ...] = (
     (Attribute.HUMIDITY, "relative_humidity", lambda value: round(value * 100)),
     (Attribute.CLOUD_COVER, "cloud_area_fraction", lambda value: round(value * 100)),
 )
+
+logger = structlog.get_logger()
 
 
 @task(name="load-yr-forecast", allow_skip=True)
@@ -33,11 +37,14 @@ async def load_yr_forecast(
     )
 
     # Figure out when to update again. If the Expires header was provided we
-    # use that, if not we try again in 10 minutes.
+    # use that, if not we try again in 1 minute. Also ensure we never try more
+    # than once a minute, regardless of the Expires header
+    next_update = datetime.now(timezone.utc) + timedelta(minutes=1)
     if "Expires" in response.headers:
-        next_update = parsedate_to_datetime(response.headers["Expires"])
-    else:
-        next_update = datetime.now(timezone.utc) + timedelta(minutes=10)
+        next_update = max(
+            next_update,
+            parsedate_to_datetime(response.headers["Expires"]) + timedelta(minutes=1),
+        )
 
     if response.status_code == 200:
         forecast = ForecastResponse.parse_obj(response.json())
@@ -57,9 +64,11 @@ async def load_yr_forecast(
             forecast_time=forecast.properties.meta.updated_at,
             values=values,
         )
-    elif response.status_code != 304:
+    elif response.status_code == 304:
+        logger.info("Got 304 Not Modified status code from YR")
+    else:
         raise RuntimeError(
-            f"Got unexpected statuc code {response.status_code} "
+            f"Got unexpected status code {response.status_code} "
             f"when updating YR forecast"
         )
 
