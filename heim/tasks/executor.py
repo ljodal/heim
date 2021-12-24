@@ -98,14 +98,6 @@ async def execute_task(
             task_name=task.name,
             task_arguments=arguments,
         )
-    except asyncio.CancelledError:
-        logger.exception(
-            "Task cancelled",
-            task_id=task_id,
-            task_name=task.name,
-            task_arguments=arguments,
-        )
-        await task_failed(task_id=task_id)
     except Exception:
         logger.exception(
             "Task failed",

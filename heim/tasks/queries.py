@@ -45,19 +45,37 @@ async def get_next_task(
 
 
 async def task_started(*, task_id: int) -> None:
+    """
+    Set the time when the task started executing.
+    """
+
     await db.execute(
         "UPDATE task SET started_at=clock_timestamp() WHERE id = $1", task_id
     )
 
 
 async def task_finished(*, task_id: int) -> None:
+    """
+    Set the time when the task finished.
+    """
+
     await db.execute(
         "UPDATE task SET finished_at=clock_timestamp() WHERE id = $1", task_id
     )
 
 
 async def task_failed(*, task_id: int) -> None:
-    await db.execute("UPDATE task SET started_at=NULL WHERE id = $1", task_id)
+    """
+    Reset task state and increase run-at by 30 seconds.
+    """
+
+    await db.execute(
+        """
+        UPDATE task SET started_at=NULL, run_at=run_at + '30 seconds'::interval
+        WHERE id = $1
+        """,
+        task_id,
+    )
 
 
 ###################
