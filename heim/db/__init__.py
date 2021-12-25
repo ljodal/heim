@@ -1,4 +1,5 @@
 import json
+import os
 import threading
 from contextlib import asynccontextmanager, contextmanager
 from contextvars import ContextVar
@@ -35,7 +36,9 @@ async def setup() -> AsyncIterator[None]:
     Configure database connectivity with a single connection.
     """
 
-    con = await asyncpg.connect(server_settings=SERVER_SETTINGS)
+    dsn = os.environ.get("DATABASE_URL", None)
+
+    con = await asyncpg.connect(dsn=dsn, server_settings=SERVER_SETTINGS)
     try:
         await initialize_connection(con)
         with set_connection(con):
@@ -50,8 +53,9 @@ async def setup_pool() -> AsyncIterator[None]:
     Configure database connectivity with a connection pool.
     """
 
+    dsn = os.environ.get("DATABASE_URL", None)
     pool = await asyncpg.create_pool(
-        server_settings=SERVER_SETTINGS, init=initialize_connection
+        dsn=dsn, server_settings=SERVER_SETTINGS, init=initialize_connection
     )
     thread_local.connection_pool = pool
     try:

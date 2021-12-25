@@ -6,20 +6,19 @@ from pathlib import Path
 
 import asyncpg  # type: ignore
 
+from .. import db
+
 MIGRATIONS_DIR = Path(__file__).parent / "migrations"
 
 
+@db.setup()
 async def migrate_db() -> None:
-    con = await asyncpg.connect()
-
-    try:
+    async with db.connection() as con:
         await create_migrations_table(con=con)
         applied_migrations = await get_applied_migrations(con=con)
         for migrations_file in sorted(MIGRATIONS_DIR.glob("*.sql")):
             if migrations_file.stem not in applied_migrations:
                 await apply_migration(path=migrations_file, con=con)
-    finally:
-        await con.close()
 
 
 async def create_migrations_table(*, con: asyncpg.Connection) -> None:

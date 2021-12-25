@@ -3,7 +3,7 @@ from pydantic import BaseModel
 
 from . import queries
 
-router = APIRouter()
+router = APIRouter(prefix="/accounts")
 
 
 class CreateAccountPayload(BaseModel):
