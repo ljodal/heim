@@ -1,5 +1,7 @@
 import asyncio
 from datetime import datetime, timezone
+from importlib import import_module
+from pathlib import Path
 from typing import Any, Optional
 
 import structlog
@@ -15,6 +17,22 @@ from .queries import (
 )
 
 logger = structlog.get_logger()
+
+
+def load_tasks() -> None:
+    def _load_tasks(path: Path) -> None:
+        for api_module in path.glob("*/tasks.py"):
+
+            # Construct the name of the module
+            relative_path = api_module.relative_to(Path(__file__).parent.parent)
+            module_path = ".".join(p.name for p in reversed(relative_path.parents))
+            module_name = f"{module_path}.{api_module.stem}"
+
+            # Import the module
+            import_module(module_name, package="heim")
+
+    _load_tasks(Path(__file__).parent.parent)
+    _load_tasks(Path(__file__).parent.parent / "integrations")
 
 
 async def run_tasks() -> None:

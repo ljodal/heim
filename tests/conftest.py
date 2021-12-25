@@ -9,7 +9,7 @@ from heim import db
 from heim.accounts.queries import create_account, create_location
 from heim.auth.models import Session
 from heim.auth.queries import create_session
-from heim.db.setup import migrate_db
+from heim.db.migrations import migrate_db
 
 #######################
 # Basic project setup #
