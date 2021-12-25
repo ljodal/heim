@@ -7,7 +7,7 @@ from .services import with_aqara_client
 from .tasks import update_sensor_data
 
 
-@click.group(name="aqara")
+@click.group(name="aqara", help="Manage Aqara accounts and devices")
 def cli() -> None:
     pass
 

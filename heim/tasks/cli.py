@@ -6,7 +6,7 @@ from .. import db
 from .executor import load_tasks, run_tasks
 
 
-@click.group(name="tasks")
+@click.group(name="tasks", help="Run and inspect background tasks")
 def cli() -> None:
     load_tasks()
 
