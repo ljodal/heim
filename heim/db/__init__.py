@@ -144,7 +144,7 @@ async def transaction() -> AsyncIterator[None]:
     """
 
     async with connection() as con:
-        with con.transaction():
+        async with con.transaction():
             yield
 
 
@@ -234,5 +234,5 @@ async def fetchval(
 
 @contextmanager
 def log_query(sql: str, args: Any) -> Iterator[None]:
-    with timed("Execute query", sql=textwrap.shorten(sql, 100), args=args):
+    with timed("Execute query", sql=textwrap.shorten(sql, 100)):
         yield

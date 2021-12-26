@@ -13,5 +13,5 @@ def timed(name: str, **kwargs: Any) -> Iterator[None]:
     try:
         yield
     finally:
-        elapsed_ms = (time.monotonic() - t) * 1000
-        logger.info(name, elapsed_ms=elapsed_ms, **kwargs)
+        elapsed_ms = round((time.monotonic() - t) * 1000, 2)
+        logger.debug(name, elapsed_ms=elapsed_ms, **kwargs)
