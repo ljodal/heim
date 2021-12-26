@@ -47,21 +47,32 @@ async def setup() -> AsyncIterator[None]:
         await con.close()
 
 
+async def connect() -> asyncpg.pool.Pool:
+    assert getattr(thread_local, "connection_pool", None) is None
+    dsn = os.environ.get("DATABASE_URL", None)
+    pool = thread_local.connection_pool = await asyncpg.create_pool(
+        dsn=dsn, server_settings=SERVER_SETTINGS, init=initialize_connection
+    )
+    return pool
+
+
+async def disconnect() -> None:
+    assert getattr(thread_local, "connection_pool", None) is not None
+    await thread_local.connection_pool.close()
+    thread_local.connection_pool = None
+
+
 @asynccontextmanager
 async def setup_pool() -> AsyncIterator[None]:
     """
     Configure database connectivity with a connection pool.
     """
 
-    dsn = os.environ.get("DATABASE_URL", None)
-    pool = await asyncpg.create_pool(
-        dsn=dsn, server_settings=SERVER_SETTINGS, init=initialize_connection
-    )
-    thread_local.connection_pool = pool
+    await connect()
     try:
         yield
     finally:
-        await pool.close()
+        await disconnect()
 
 
 @contextmanager

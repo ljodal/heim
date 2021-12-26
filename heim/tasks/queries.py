@@ -24,6 +24,19 @@ async def queue_task(
     )
 
 
+async def get_tasks(
+    show_all: bool = False,
+) -> list[tuple[int, str, dict[str, Any], datetime, int | None]]:
+    return await db.fetch(
+        f"""
+        SELECT id, name, arguments, run_at, from_schedule_id
+        FROM task
+        {"WHERE started_at IS NULL" if not show_all else ""}
+        ORDER BY run_at
+        """
+    )
+
+
 async def get_next_task(
     *, now: Optional[datetime] = None
 ) -> tuple[int, str, dict[str, Any], datetime, Optional[int]] | None:

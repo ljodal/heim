@@ -7,6 +7,10 @@ from pathlib import Path
 import click
 import structlog
 
+structlog.configure(
+    wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
+)
+
 
 class AsyncAwareContext(click.Context):
     """
@@ -26,9 +30,7 @@ click.BaseCommand.context_class = AsyncAwareContext
 
 @click.group()
 def cli() -> None:
-    structlog.configure(
-        wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
-    )
+    pass
 
 
 def load_apps(path: Path) -> None:

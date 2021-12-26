@@ -45,7 +45,7 @@ class AqaraClient:
     # Auth #
     ########
 
-    async def get_auth_code(self, *, code: str, account: str) -> AuthCodeResult:
+    async def get_auth_code(self, *, account: str) -> AuthCodeResult:
 
         return await self._request(
             intent="config.auth.getAuthCode",

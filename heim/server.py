@@ -3,6 +3,8 @@ from pathlib import Path
 
 from fastapi import FastAPI
 
+from . import db
+
 app = FastAPI()
 
 
@@ -22,3 +24,19 @@ def load_apps(path: Path) -> None:
 
 load_apps(Path(__file__).parent)
 load_apps(Path(__file__).parent / "integrations")
+
+
+@app.on_event("startup")
+async def startup():
+    await db.connect()
+
+
+@app.on_event("shutdown")
+async def shutdown():
+    await db.disconnect()
+
+
+@app.get("/health")
+async def get_health() -> dict:
+    await db.fetch("SELECT 1")
+    return {"status": "pass"}

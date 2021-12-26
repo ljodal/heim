@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Generic, Literal, Optional, TypedDict, TypeVar, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 from pydantic.generics import GenericModel
 
 ###########
@@ -88,6 +88,10 @@ class BaseResponse(GenericModel, Generic[T]):
     # If we do not get a successful response this is not set, so we need to
     # have a default value here.
     result: Optional[T] = None
+
+    @validator("result", pre=True)
+    def result_ignore_empty_string(cls, v):
+        return None if v == "" else v
 
     class Config:
         alias_generator = to_camel

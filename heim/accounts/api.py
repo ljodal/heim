@@ -11,7 +11,7 @@ class CreateAccountPayload(BaseModel):
     password: str
 
 
-@router.get("/")
+@router.post("/")
 async def create_account(body: CreateAccountPayload):
     await queries.create_account(username=body.username, password=body.password)
     return {"success": True}
