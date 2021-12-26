@@ -1,15 +1,9 @@
 import asyncio
 import inspect
-import logging
 from importlib import import_module
 from pathlib import Path
 
 import click
-import structlog
-
-structlog.configure(
-    wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
-)
 
 
 class AsyncAwareContext(click.Context):

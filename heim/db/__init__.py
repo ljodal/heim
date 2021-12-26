@@ -1,5 +1,6 @@
 import json
 import os
+import textwrap
 import threading
 from contextlib import asynccontextmanager, contextmanager
 from contextvars import ContextVar
@@ -16,6 +17,8 @@ from typing import (
 
 import asyncpg  # type: ignore
 import structlog
+
+from ..utils import timed
 
 logger = structlog.get_logger()
 
@@ -141,20 +144,22 @@ async def transaction() -> AsyncIterator[None]:
     """
 
     async with connection() as con:
-        async with con.transaction():
+        with con.transaction():
             yield
 
 
 async def execute(sql: str, *args: Any, timeout: Optional[float] = None) -> str:
     async with connection() as con:
-        return await con.execute(sql, *args, timeout=timeout)
+        async with log_query(sql, args):
+            return await con.execute(sql, *args, timeout=timeout)
 
 
 async def executemany(
     sql: str, args: Iterable[Sequence], *, timeout: Optional[float] = None
 ) -> str:
     async with connection() as con:
-        return await con.executemany(sql, args, timeout=timeout)
+        with log_query(sql, args):
+            return await con.executemany(sql, args, timeout=timeout)
 
 
 @overload
@@ -178,7 +183,10 @@ async def fetch(
     record_class: Optional[T] = None,
 ) -> list[T]:
     async with connection() as con:
-        return await con.fetch(sql, *args, timeout=timeout, record_class=record_class)
+        with log_query(sql, args):
+            return await con.fetch(
+                sql, *args, timeout=timeout, record_class=record_class
+            )
 
 
 @overload
@@ -202,9 +210,10 @@ async def fetchrow(
     record_class: Optional[T] = None,
 ) -> T:
     async with connection() as con:
-        return await con.fetchrow(
-            sql, *args, timeout=timeout, record_class=record_class
-        )
+        with log_query(sql, args):
+            return await con.fetchrow(
+                sql, *args, timeout=timeout, record_class=record_class
+            )
 
 
 async def fetchval(
@@ -214,4 +223,16 @@ async def fetchval(
     timeout: Optional[float] = None,
 ) -> T:
     async with connection() as con:
-        return await con.fetchval(sql, *args, column=column, timeout=timeout)
+        with log_query(sql, args):
+            return await con.fetchval(sql, *args, column=column, timeout=timeout)
+
+
+###########
+# Helpers #
+###########
+
+
+@contextmanager
+def log_query(sql: str, args: Any) -> Iterator[None]:
+    with timed("Execute query", sql=textwrap.shorten(sql, 100), args=args):
+        yield

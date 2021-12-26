@@ -1,17 +1,12 @@
-from fastapi import APIRouter
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends
 
-from . import queries
+from .dependencies import current_account
+from .models import Location
+from .queries import get_locations
 
-router = APIRouter(prefix="/accounts")
-
-
-class CreateAccountPayload(BaseModel):
-    username: str
-    password: str
+router = APIRouter()
 
 
-@router.post("/")
-async def create_account(body: CreateAccountPayload):
-    await queries.create_account(username=body.username, password=body.password)
-    return {"success": True}
+@router.get("/locations", response_model=list[Location])
+async def _get_locations(account_id: int = Depends(current_account)) -> list[Location]:
+    return await get_locations(account_id=account_id)

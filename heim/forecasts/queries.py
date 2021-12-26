@@ -75,3 +75,59 @@ async def get_forecast_coordinate(*, forecast_id: int) -> tuple[float, float]:
         """,
         forecast_id,
     )
+
+
+async def get_forecast(*, account_id: int, location_id: int) -> int | None:
+
+    return await db.fetchval(
+        "SELECT id FROM forecast WHERE account_id = $1 AND location_id = $2 LIMIT 1",
+        account_id,
+        location_id,
+    )
+
+
+async def get_instances(
+    *, forecast_id: int, attribute: Attribute
+) -> dict[datetime, tuple[datetime, int]]:
+
+    # Figure out which instances we are interested in
+    latest, twelve_hours, one_day = await db.fetchrow(
+        """
+        SELECT
+            (
+                SELECT id
+                FROM forecast_instance
+                WHERE forecast_id = $1
+                ORDER BY created_at DESC LIMIT 1
+            ),
+            (
+                SELECT id
+                FROM forecast_instance
+                WHERE forecast_id = $1 AND created_at < now() - '12 hours'::interval
+                ORDER BY created_at DESC LIMIT 1
+            ),
+            (
+                SELECT id
+                FROM forecast_instance
+                WHERE forecast_id = $1 AND created_at < now() - '24 hours'::interval
+                ORDER BY created_at DESC LIMIT 1
+            )
+        """,
+        forecast_id,
+    )
+
+    rows = await db.fetch(
+        """
+        SELECT created_at, array_agg((measured_at, value) ORDER BY measured_at) as values
+        FROM forecast_instance i JOIN forecast_value v ON v.forecast_instance_id = i.id
+        WHERE id IN ($1, $2, $3) AND attribute = $4
+        GROUP BY id
+        ORDER BY created_at DESC
+        """,
+        latest,
+        twelve_hours,
+        one_day,
+        attribute,
+    )
+
+    return {created_at: values for created_at, values in rows}
