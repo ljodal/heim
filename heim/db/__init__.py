@@ -150,7 +150,7 @@ async def transaction() -> AsyncIterator[None]:
 
 async def execute(sql: str, *args: Any, timeout: Optional[float] = None) -> str:
     async with connection() as con:
-        async with log_query(sql, args):
+        with log_query(sql, args):
             return await con.execute(sql, *args, timeout=timeout)
 
 
