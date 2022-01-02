@@ -19,7 +19,7 @@ def load_apps(path: Path) -> None:
         # Register the module
         module = import_module(module_name, package="heim")
         if router := getattr(module, "router", None):
-            app.include_router(router)
+            app.include_router(router, prefix="/api")
 
 
 load_apps(Path(__file__).parent)

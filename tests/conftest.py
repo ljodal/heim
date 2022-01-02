@@ -3,6 +3,7 @@ import os
 from typing import AsyncIterator, Iterator
 
 import asyncpg  # type: ignore
+import httpx
 import pytest
 
 from heim import db
@@ -10,6 +11,7 @@ from heim.accounts.queries import create_account, create_location
 from heim.auth.models import Session
 from heim.auth.queries import create_session
 from heim.db.migrations import migrate_db
+from heim.server import app
 
 #######################
 # Basic project setup #
@@ -113,3 +115,22 @@ async def location_id(
 @pytest.fixture
 async def session(connection, account_id: int) -> Session:
     return await create_session(account_id=account_id)
+
+
+########
+# APIs #
+########
+
+
+@pytest.fixture
+async def client() -> AsyncIterator[httpx.AsyncClient]:
+    async with httpx.AsyncClient(app=app, base_url="http://test") as c:
+        yield c
+
+
+@pytest.fixture
+async def authenticated_client(session: Session) -> AsyncIterator[httpx.AsyncClient]:
+    headers = {"Authorization": f"Bearer {session.key}"}
+
+    async with httpx.AsyncClient(app=app, base_url="http://test", headers=headers) as c:
+        yield c

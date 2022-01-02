@@ -1,6 +1,11 @@
-from typing import Any
+from typing import Any, Literal
 
 import pydantic
+
+
+class TokenResponse(pydantic.BaseModel):
+    access_token: str
+    token_type: Literal["bearer"]
 
 
 class Session(pydantic.BaseModel):

@@ -3,7 +3,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
-from ..accounts.dependencies import current_account
+from ..auth.dependencies import current_account
 from ..sensors.types import Attribute
 from ..utils import timed
 from .queries import get_forecast, get_instances

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 
-from .dependencies import current_account
+from ..auth.dependencies import current_account
 from .models import Location
 from .queries import get_locations
 
