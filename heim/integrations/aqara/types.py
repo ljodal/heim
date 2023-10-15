@@ -114,7 +114,7 @@ class RefreshTokenResult(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel)
 
 
-class DeviceInfo(BaseModel):
+class DeviceInfo(BaseModel, protected_namespaces=()):
     parent_did: str | None = None
     position_id: str
     create_time: datetime

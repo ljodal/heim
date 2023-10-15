@@ -28,10 +28,10 @@ async def test_update_sensor_data(
     return_values = [
         QueryResourceHistoryResult(
             data=[
-                ResourceHistoryPoint.construct(
+                ResourceHistoryPoint.model_construct(
                     timestamp=now, resource_id=resource_id, value=1, subject_id="foo"
                 ),
-                ResourceHistoryPoint.construct(
+                ResourceHistoryPoint.model_construct(
                     timestamp=now + timedelta(hours=1),
                     resource_id=resource_id,
                     value=0,
