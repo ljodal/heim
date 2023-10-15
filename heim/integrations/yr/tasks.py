@@ -47,7 +47,7 @@ async def load_yr_forecast(
         )
 
     if response.status_code == 200:
-        forecast = ForecastResponse.parse_obj(response.json())
+        forecast = ForecastResponse.model_validate_json(response.text)
         values = [
             (
                 attribute,

@@ -29,7 +29,6 @@ def cli() -> None:
 
 def load_apps(path: Path) -> None:
     for api_module in path.glob("*/cli*.py"):
-
         # Construct the name of the module
         relative_path = api_module.relative_to(Path(__file__).parent)
         module_path = ".".join(p.name for p in reversed(relative_path.parents))

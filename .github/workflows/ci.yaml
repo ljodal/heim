@@ -41,11 +41,6 @@ jobs:
       PGDATABASE: heim
       PGUSER: heim
       PGPASSWORD: heim
-      # App config
-      AQARA_APP_ID: foo
-      AQARA_APP_KEY: foo
-      AQARA_KEY_ID: foo
-      AQARA_DOMAIN: foo
     steps:
       - name: Checkout
         uses: actions/checkout@v2

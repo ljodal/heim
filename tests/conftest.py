@@ -13,6 +13,14 @@ from heim.auth.queries import create_session
 from heim.db.migrations import migrate_db
 from heim.server import app
 
+
+def pytest_configure(config: pytest.Config) -> None:
+    os.environ.setdefault("AQARA_APP_ID", "foo")
+    os.environ.setdefault("AQARA_APP_KEY", "foo")
+    os.environ.setdefault("AQARA_KEY_ID", "foo")
+    os.environ.setdefault("AQARA_DOMAIN", "aqara.example.com")
+
+
 #######################
 # Basic project setup #
 #######################

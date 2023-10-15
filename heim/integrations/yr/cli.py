@@ -16,7 +16,6 @@ def cli() -> None:
 @db.setup()
 @db.transaction()
 async def create(*, location_id: int, account_id: int) -> None:
-
     forecast_id = await create_forecast(
         name="YR", account_id=account_id, location_id=location_id
     )

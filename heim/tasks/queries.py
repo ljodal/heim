@@ -142,7 +142,6 @@ async def create_scheduled_task(
 async def queue_next_task(
     *, schedule_id: int, previous: Optional[datetime] = None
 ) -> None:
-
     name, arguments, cron_expression = await db.fetchrow(
         "SELECT name, arguments, expression FROM scheduled_task WHERE id = $1",
         schedule_id,

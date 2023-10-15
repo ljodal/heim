@@ -78,7 +78,6 @@ async def get_forecast_coordinate(*, forecast_id: int) -> tuple[float, float]:
 
 
 async def get_forecast(*, account_id: int, location_id: int) -> int | None:
-
     return await db.fetchval(
         "SELECT id FROM forecast WHERE account_id = $1 AND location_id = $2 LIMIT 1",
         account_id,
@@ -89,7 +88,6 @@ async def get_forecast(*, account_id: int, location_id: int) -> int | None:
 async def get_instances(
     *, forecast_id: int, attribute: Attribute
 ) -> dict[datetime, tuple[datetime, int]]:
-
     # Figure out which instances we are interested in
     latest, twelve_hours, one_day = await db.fetchrow(
         """

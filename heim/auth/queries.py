@@ -5,7 +5,6 @@ from .models import Session
 
 
 async def get_session(*, key: str) -> Optional[Session]:
-
     row = await db.fetchrow(
         "SELECT account_id, data FROM session WHERE key = $1",
         key,

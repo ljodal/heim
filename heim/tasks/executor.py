@@ -22,7 +22,6 @@ logger = structlog.get_logger()
 def load_tasks() -> None:
     def _load_tasks(path: Path) -> None:
         for api_module in path.glob("*/tasks.py"):
-
             # Construct the name of the module
             relative_path = api_module.relative_to(Path(__file__).parent.parent)
             module_path = ".".join(p.name for p in reversed(relative_path.parents))

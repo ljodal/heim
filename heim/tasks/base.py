@@ -7,7 +7,6 @@ T = TypeVar("T", bound=Callable[..., Awaitable[Any]])
 
 
 class Task(Protocol):
-
     name: str
     allow_skip: bool
     atomic: bool

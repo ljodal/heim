@@ -42,7 +42,6 @@ async def create_location(
 
 
 async def get_locations(*, account_id: int) -> list[Location]:
-
     locations = await db.fetch(
         "SELECT id, name, coordinate FROM location WHERE account_id = $1", account_id
     )

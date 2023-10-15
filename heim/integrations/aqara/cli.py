@@ -115,7 +115,6 @@ async def resources(client: AqaraClient, *, account_id: int, model: str) -> None
 async def create_devices(
     client: AqaraClient, *, account_id: int, name: str, location_id: int, aqara_id: str
 ) -> None:
-
     devices = await client.get_all_devices()
     device = next((device for device in devices if device.did == aqara_id), None)
     if device is None:

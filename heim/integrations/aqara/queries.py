@@ -36,7 +36,6 @@ async def create_aqara_account(
 async def get_aqara_account(
     *, account_id: int, for_update: bool = False
 ) -> AqaraAccount:
-
     row = await db.fetchrow(
         f"""
         SELECT
@@ -47,11 +46,10 @@ async def get_aqara_account(
         """,
         account_id,
     )
-    return AqaraAccount.parse_obj(row)
+    return AqaraAccount.model_validate(dict(row))
 
 
 async def update_aqara_account(account: AqaraAccount, /, **updates) -> AqaraAccount:
-
     # Generate a list of changed fields. This ensures that we do use the
     # potentially untrused input in updates.
     changed_fields = {}
@@ -81,7 +79,6 @@ async def update_aqara_account(account: AqaraAccount, /, **updates) -> AqaraAcco
 async def create_aqara_sensor(
     *, account_id: int, name: str, location_id: int, model: str, aqara_id: str
 ) -> int:
-
     aqara_account_id: int = await db.fetchval(
         "SELECT id FROM aqara_account WHERE account_id = $1",
         account_id,
