@@ -6,7 +6,7 @@ authors = ["Sigurd Ljødal <sigurd@ljodal.no>"]
 license = "MIT"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.12"
 httpx = "^0.25.0"
 asyncpg = "^0.28.0"
 pydantic = "^2.4.2"
@@ -50,14 +50,14 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.black]
 src = ["heim", "tests"]
-target-version = ['py311']
+target-version = ['py312']
 
 [tool.isort]
 profile = "black"
 src_paths= ["heim", "test"]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 files = ["heim", "tests"]
 plugins = ["pydantic.mypy"]
 strict = true
