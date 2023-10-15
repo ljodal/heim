@@ -1,0 +1,14 @@
+[env]
+  PORT = "8080"
+
+[processes]
+  web = "gunicorn --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8080 heim.server:app"
+  worker = "heim tasks run"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["web"]
