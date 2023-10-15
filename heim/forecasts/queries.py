@@ -9,7 +9,7 @@ async def create_forecast(*, name: str, account_id: int, location_id: int) -> in
     Create a new forecast.
     """
 
-    return await db.fetchval(
+    forecast_id: int = await db.fetchval(
         """
         INSERT INTO forecast (account_id, location_id, name)
         VALUES ($1, $2, $3) RETURNING id
@@ -18,6 +18,7 @@ async def create_forecast(*, name: str, account_id: int, location_id: int) -> in
         location_id,
         name,
     )
+    return forecast_id
 
 
 @db.transaction()
@@ -62,12 +63,12 @@ async def create_forecast_instance(
     )
 
 
-async def get_forecast_coordinate(*, forecast_id: int) -> tuple[float, float]:
+async def get_forecast_coordinate(*, forecast_id: int) -> tuple[float, float] | None:
     """
     Get the coordinate for the given forecast.
     """
 
-    return await db.fetchval(
+    coordinate: tuple[float, float] | None = await db.fetchval(
         """
         SELECT l.coordinate
         FROM forecast f JOIN location l ON l.id = f.location_id
@@ -75,23 +76,23 @@ async def get_forecast_coordinate(*, forecast_id: int) -> tuple[float, float]:
         """,
         forecast_id,
     )
+    return coordinate
 
 
 async def get_forecast(*, account_id: int, location_id: int) -> int | None:
-
-    return await db.fetchval(
+    forecast_id: int | None = await db.fetchval(
         "SELECT id FROM forecast WHERE account_id = $1 AND location_id = $2 LIMIT 1",
         account_id,
         location_id,
     )
+    return forecast_id
 
 
 async def get_instances(
     *, forecast_id: int, attribute: Attribute
 ) -> dict[datetime, tuple[datetime, int]]:
-
     # Figure out which instances we are interested in
-    latest, twelve_hours, one_day = await db.fetchrow(
+    row = await db.fetchrow(
         """
         SELECT
             (
@@ -115,6 +116,10 @@ async def get_instances(
         """,
         forecast_id,
     )
+    if not row:
+        return {}
+
+    latest, twelve_hours, one_day = row
 
     rows = await db.fetch(
         """

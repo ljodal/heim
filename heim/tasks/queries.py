@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any
 
 from croniter import croniter
 
@@ -13,7 +13,7 @@ async def queue_task(
     Schedule a task to run at the given time.
     """
 
-    return await db.fetchval(
+    return await db.fetchval(  # type: ignore[no-any-return]
         """
         INSERT INTO task (name, arguments, run_at)
         VALUES ($1, $2, $3) RETURNING id;
@@ -27,7 +27,7 @@ async def queue_task(
 async def get_tasks(
     show_all: bool = False,
 ) -> list[tuple[int, str, dict[str, Any], datetime, int | None]]:
-    return await db.fetch(
+    return await db.fetch(  # type: ignore[return-value]
         f"""
         SELECT id, name, arguments, run_at, from_schedule_id
         FROM task
@@ -38,14 +38,14 @@ async def get_tasks(
 
 
 async def get_next_task(
-    *, now: Optional[datetime] = None
-) -> tuple[int, str, dict[str, Any], datetime, Optional[int]] | None:
+    *, now: datetime | None = None
+) -> tuple[int, str, dict[str, Any], datetime, int | None] | None:
     """
     Get and lock the next pending task. Must be called from within a
     transaction.
     """
 
-    return await db.fetchrow(
+    return await db.fetchrow(  # type: ignore[return-value]
         """
         SELECT id, name, arguments, run_at, from_schedule_id
         FROM task
@@ -140,13 +140,16 @@ async def create_scheduled_task(
 
 @db.transaction()
 async def queue_next_task(
-    *, schedule_id: int, previous: Optional[datetime] = None
+    *, schedule_id: int, previous: datetime | None = None
 ) -> None:
-
-    name, arguments, cron_expression = await db.fetchrow(
+    task = await db.fetchrow(
         "SELECT name, arguments, expression FROM scheduled_task WHERE id = $1",
         schedule_id,
     )
+    if task is None:
+        raise ValueError(f"No such schedule: {schedule_id}")
+
+    name, arguments, cron_expression = task
 
     previous = previous or datetime.now(timezone.utc)
     run_at = croniter(cron_expression, previous).get_next(datetime)

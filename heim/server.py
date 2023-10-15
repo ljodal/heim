@@ -10,7 +10,6 @@ app = FastAPI()
 
 def load_apps(path: Path) -> None:
     for api_module in path.glob("*/api.py"):
-
         # Construct the name of the module
         relative_path = api_module.relative_to(Path(__file__).parent)
         module_path = ".".join(p.name for p in reversed(relative_path.parents))
@@ -27,16 +26,16 @@ load_apps(Path(__file__).parent / "integrations")
 
 
 @app.on_event("startup")
-async def startup():
+async def startup() -> None:
     await db.connect()
 
 
 @app.on_event("shutdown")
-async def shutdown():
+async def shutdown() -> None:
     await db.disconnect()
 
 
 @app.get("/health")
-async def get_health() -> dict:
+async def get_health() -> dict[str, str]:
     await db.fetch("SELECT 1")
     return {"status": "pass"}

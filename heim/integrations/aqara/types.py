@@ -1,8 +1,7 @@
 from datetime import datetime
-from typing import Generic, Literal, Optional, TypedDict, TypeVar, Union
+from typing import Any, Generic, Literal, TypedDict, TypeVar, Union
 
-from pydantic import BaseModel, Field, validator
-from pydantic.generics import GenericModel
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 ###########
 # Helpers #
@@ -50,7 +49,7 @@ class FetchResourceHistoryData(TypedDict):
     subjectId: str
     resourceIds: list[str]
     startTime: str
-    scanId: Optional[str]
+    scanId: str | None
 
 
 Intent = Union[
@@ -79,51 +78,44 @@ IntentData = Union[
 T = TypeVar("T")
 
 
-class BaseResponse(GenericModel, Generic[T]):
+class BaseResponse(BaseModel, Generic[T]):
     code: int
     message: str
-    msg_details: Optional[str] = None
+    msg_details: str | None = None
     request_id: str
 
     # If we do not get a successful response this is not set, so we need to
     # have a default value here.
-    result: Optional[T] = None
+    result: T | None = None
 
-    @validator("result", pre=True)
-    def result_ignore_empty_string(cls, v):
+    @field_validator("result", mode="before")
+    def result_ignore_empty_string(cls, v: Any) -> Any:
         return None if v == "" else v
 
-    class Config:
-        alias_generator = to_camel
+    model_config = ConfigDict(alias_generator=to_camel)
 
 
 class AuthCodeResult(BaseModel):
-    auth_code: Optional[str]
-
-    class Config:
-        alias_generator = to_camel
+    auth_code: str | None = None
+    model_config = ConfigDict(alias_generator=to_camel)
 
 
 class AccessTokenResult(BaseModel):
     expires_in: int
     access_token: str
     refresh_token: str
-
-    class Config:
-        alias_generator = to_camel
+    model_config = ConfigDict(alias_generator=to_camel)
 
 
 class RefreshTokenResult(BaseModel):
     expires_in: int
     access_token: str
     refresh_token: str
-
-    class Config:
-        alias_generator = to_camel
+    model_config = ConfigDict(alias_generator=to_camel)
 
 
-class DeviceInfo(BaseModel):
-    parent_did: Optional[str]
+class DeviceInfo(BaseModel, protected_namespaces=()):
+    parent_did: str | None = None
     position_id: str
     create_time: datetime
     update_time: datetime
@@ -134,33 +126,27 @@ class DeviceInfo(BaseModel):
     firmware_version: str
     device_name: str
     did: str
-
-    class Config:
-        alias_generator = to_camel
+    model_config = ConfigDict(alias_generator=to_camel)
 
 
 class QueryDeviceInfoResult(BaseModel):
     data: list[DeviceInfo]
     total_count: int
-
-    class Config:
-        alias_generator = to_camel
+    model_config = ConfigDict(alias_generator=to_camel)
 
 
 class ResourceInfo(BaseModel):
-    enums: Optional[str]
+    enums: str | None = None
     resource_id: str
-    min_value: Optional[int]
+    min_value: int | None = None
     unit: int
-    access: Optional[int]
-    max_value: Optional[int]
-    default_value: Optional[str]
+    access: int | None = None
+    max_value: int | None = None
+    default_value: str | None = None
     name: str
     description: str
     model: str
-
-    class Config:
-        alias_generator = to_camel
+    model_config = ConfigDict(alias_generator=to_camel)
 
 
 class ResourceHistoryPoint(BaseModel):
@@ -168,15 +154,10 @@ class ResourceHistoryPoint(BaseModel):
     resource_id: str
     value: int
     subject_id: str
-
-    class Config:
-        alias_generator = to_camel
+    model_config = ConfigDict(alias_generator=to_camel)
 
 
 class QueryResourceHistoryResult(BaseModel):
-
     data: list[ResourceHistoryPoint]
-    scan_id: Optional[str]
-
-    class Config:
-        alias_generator = to_camel
+    scan_id: str | None = None
+    model_config = ConfigDict(alias_generator=to_camel)

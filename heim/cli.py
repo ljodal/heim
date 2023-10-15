@@ -1,7 +1,9 @@
 import asyncio
 import inspect
+from collections.abc import Callable
 from importlib import import_module
 from pathlib import Path
+from typing import Any
 
 import click
 
@@ -11,10 +13,10 @@ class AsyncAwareContext(click.Context):
     A click context that invokes async functions with asyncio.run.
     """
 
-    def invoke(self, *args, **kwargs):
+    def invoke(self, __callback: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
         r = super().invoke(*args, **kwargs)
         if inspect.isawaitable(r):
-            return asyncio.run(r)
+            return asyncio.run(r)  # type: ignore[arg-type]
         else:
             return r
 
@@ -29,7 +31,6 @@ def cli() -> None:
 
 def load_apps(path: Path) -> None:
     for api_module in path.glob("*/cli*.py"):
-
         # Construct the name of the module
         relative_path = api_module.relative_to(Path(__file__).parent)
         module_path = ".".join(p.name for p in reversed(relative_path.parents))

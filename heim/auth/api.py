@@ -11,7 +11,6 @@ router = APIRouter(prefix="/auth")
 
 @router.post("/token", response_model=TokenResponse)
 async def login(form_data: OAuth2PasswordRequestForm = Depends()) -> TokenResponse:
-
     account = await get_account(username=form_data.username)
     if not account:
         raise HTTPException(

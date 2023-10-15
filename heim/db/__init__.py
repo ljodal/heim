@@ -1,30 +1,24 @@
+from __future__ import annotations
+
 import json
 import os
 import textwrap
 import threading
+from collections.abc import AsyncIterator, Iterable, Iterator, Sequence
 from contextlib import asynccontextmanager, contextmanager
 from contextvars import ContextVar
-from typing import (
-    Any,
-    AsyncIterator,
-    Iterable,
-    Iterator,
-    Optional,
-    Sequence,
-    TypeVar,
-    overload,
-)
+from typing import Any
 
-import asyncpg  # type: ignore
+import asyncpg
 import structlog
 
 from ..utils import timed
 
 logger = structlog.get_logger()
 
-T = TypeVar("T", bound=asyncpg.Record)
-
-current_connection: ContextVar[asyncpg.Connection] = ContextVar("connection")
+current_connection: ContextVar[asyncpg.Connection[asyncpg.Record]] = ContextVar(
+    "connection"
+)
 
 thread_local = threading.local()
 
@@ -50,12 +44,13 @@ async def setup() -> AsyncIterator[None]:
         await con.close()
 
 
-async def connect() -> asyncpg.pool.Pool:
+async def connect() -> asyncpg.pool.Pool[asyncpg.Record]:
     assert getattr(thread_local, "connection_pool", None) is None
     dsn = os.environ.get("DATABASE_URL", None)
     pool = thread_local.connection_pool = await asyncpg.create_pool(
         dsn=dsn, server_settings=SERVER_SETTINGS, init=initialize_connection
     )
+    assert pool is not None
     return pool
 
 
@@ -79,7 +74,7 @@ async def setup_pool() -> AsyncIterator[None]:
 
 
 @contextmanager
-def set_connection(con: asyncpg.Connection) -> Iterator[None]:
+def set_connection(con: asyncpg.Connection[asyncpg.Record]) -> Iterator[None]:
     """
     Set the connection for the current task
     """
@@ -93,7 +88,7 @@ def set_connection(con: asyncpg.Connection) -> Iterator[None]:
         current_connection.reset(reset_token)
 
 
-async def initialize_connection(con: asyncpg.Connection) -> None:
+async def initialize_connection(con: asyncpg.Connection[asyncpg.Record]) -> None:
     """
     Hook to customize connections.
     """
@@ -104,7 +99,7 @@ async def initialize_connection(con: asyncpg.Connection) -> None:
 
 
 @asynccontextmanager
-async def connection() -> AsyncIterator[asyncpg.Connection]:
+async def connection() -> AsyncIterator[asyncpg.Connection[asyncpg.Record]]:
     """
     Get or acquire a connection for connection for the current task.
     """
@@ -148,80 +143,39 @@ async def transaction() -> AsyncIterator[None]:
             yield
 
 
-async def execute(sql: str, *args: Any, timeout: Optional[float] = None) -> str:
+async def execute(sql: str, *args: Any, timeout: float | None = None) -> str:
     async with connection() as con:
         with log_query(sql, args):
             return await con.execute(sql, *args, timeout=timeout)
 
 
 async def executemany(
-    sql: str, args: Iterable[Sequence], *, timeout: Optional[float] = None
-) -> str:
+    sql: str, args: Iterable[Sequence[Any]], *, timeout: float | None = None
+) -> None:
     async with connection() as con:
         with log_query(sql, args):
-            return await con.executemany(sql, args, timeout=timeout)
-
-
-@overload
-async def fetch(
-    sql: str, *args: Any, timeout: Optional[float] = ..., record_class: None = ...
-) -> asyncpg.Record:
-    ...
-
-
-@overload
-async def fetch(
-    sql: str, *args: Any, timeout: Optional[float] = ..., record_class: T = ...
-) -> list[T]:
-    ...
+            await con.executemany(sql, args, timeout=timeout)
 
 
 async def fetch(
-    sql: str,
-    *args: Any,
-    timeout: Optional[float] = None,
-    record_class: Optional[T] = None,
-) -> list[T]:
+    sql: str, *args: Any, timeout: float | None = None
+) -> list[asyncpg.Record]:
     async with connection() as con:
         with log_query(sql, args):
-            return await con.fetch(
-                sql, *args, timeout=timeout, record_class=record_class
-            )
-
-
-@overload
-async def fetchrow(
-    sql: str, *args: Any, timeout: Optional[float] = ..., record_class: None = ...
-) -> asyncpg.Record:
-    ...
-
-
-@overload
-async def fetchrow(
-    sql: str, *args: Any, timeout: Optional[float] = ..., record_class: T = ...
-) -> T:
-    ...
+            return await con.fetch(sql, *args, timeout=timeout)
 
 
 async def fetchrow(
-    sql: str,
-    *args: Any,
-    timeout: Optional[float] = None,
-    record_class: Optional[T] = None,
-) -> T:
+    sql: str, *args: Any, timeout: float | None = None
+) -> asyncpg.Record | None:
     async with connection() as con:
         with log_query(sql, args):
-            return await con.fetchrow(
-                sql, *args, timeout=timeout, record_class=record_class
-            )
+            return await con.fetchrow(sql, *args, timeout=timeout)
 
 
 async def fetchval(
-    sql: str,
-    *args: Any,
-    column: int = 0,
-    timeout: Optional[float] = None,
-) -> T:
+    sql: str, *args: Any, column: int = 0, timeout: float | None = None
+) -> Any:
     async with connection() as con:
         with log_query(sql, args):
             return await con.fetchval(sql, *args, column=column, timeout=timeout)

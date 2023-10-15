@@ -1,23 +1,22 @@
 from datetime import datetime
 from decimal import Decimal
-from typing import Optional
 
 import pydantic
 
 
 class ForecastDetailsInstant(pydantic.BaseModel):
-    air_pressure_at_sea_level: Optional[Decimal]
-    air_temperature: Optional[Decimal]
-    cloud_area_fraction: Optional[Decimal]
-    cloud_area_fraction_high: Optional[Decimal]
-    cloud_area_fraction_low: Optional[Decimal]
-    cloud_area_fraction_medium: Optional[Decimal]
-    dew_point_temperature: Optional[Decimal]
-    fog_area_fraction: Optional[Decimal]
-    relative_humidity: Optional[Decimal]
-    wind_from_direction: Optional[Decimal]
-    wind_speed: Optional[Decimal]
-    wind_speed_of_gust: Optional[Decimal]
+    air_pressure_at_sea_level: Decimal | None = None
+    air_temperature: Decimal | None = None
+    cloud_area_fraction: Decimal | None = None
+    cloud_area_fraction_high: Decimal | None = None
+    cloud_area_fraction_low: Decimal | None = None
+    cloud_area_fraction_medium: Decimal | None = None
+    dew_point_temperature: Decimal | None = None
+    fog_area_fraction: Decimal | None = None
+    relative_humidity: Decimal | None = None
+    wind_from_direction: Decimal | None = None
+    wind_speed: Decimal | None = None
+    wind_speed_of_gust: Decimal | None = None
 
 
 class ForecastDataInstant(pydantic.BaseModel):
@@ -25,14 +24,14 @@ class ForecastDataInstant(pydantic.BaseModel):
 
 
 class ForecastDetailsPeriod(pydantic.BaseModel):
-    air_temperature_max: Optional[Decimal]
-    air_temperature_min: Optional[Decimal]
-    precipitation_amount: Optional[Decimal]
-    precipitation_amount_max: Optional[Decimal]
-    precipitation_amount_min: Optional[Decimal]
-    probability_of_precipitation: Optional[Decimal]
-    probability_of_thunder: Optional[Decimal]
-    ultraviolet_index_clear_sky_max: Optional[Decimal]
+    air_temperature_max: Decimal | None = None
+    air_temperature_min: Decimal | None = None
+    precipitation_amount: Decimal | None = None
+    precipitation_amount_max: Decimal | None = None
+    precipitation_amount_min: Decimal | None = None
+    probability_of_precipitation: Decimal | None = None
+    probability_of_thunder: Decimal | None = None
+    ultraviolet_index_clear_sky_max: Decimal | None = None
 
 
 class ForecastDataPeriod(pydantic.BaseModel):
@@ -41,9 +40,9 @@ class ForecastDataPeriod(pydantic.BaseModel):
 
 class ForecastData(pydantic.BaseModel):
     instant: ForecastDataInstant
-    next_1_hour: Optional[ForecastDataPeriod]
-    next_6_hours: Optional[ForecastDataPeriod]
-    next_12_hours: Optional[ForecastDataPeriod]
+    next_1_hour: ForecastDataPeriod | None = None
+    next_6_hours: ForecastDataPeriod | None = None
+    next_12_hours: ForecastDataPeriod | None = None
 
 
 class ForecastTimeStep(pydantic.BaseModel):

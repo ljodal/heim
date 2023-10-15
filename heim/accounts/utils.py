@@ -52,7 +52,7 @@ def get_salt(entropy: int = 128) -> str:
     return get_random_string(char_count)
 
 
-def get_random_string(length, allowed_chars=RANDOM_STRING_CHARS) -> str:
+def get_random_string(length: int, allowed_chars: str = RANDOM_STRING_CHARS) -> str:
     """
     Return a securely generated random string.
 
@@ -63,7 +63,7 @@ def get_random_string(length, allowed_chars=RANDOM_STRING_CHARS) -> str:
       * length: 12, bit length =~ 71 bits
       * length: 22, bit length =~ 131 bits
 
-    NOTE: This method is copies from Django
+    NOTE: This method is copied from Django
     """
 
     return "".join(secrets.choice(allowed_chars) for i in range(length))

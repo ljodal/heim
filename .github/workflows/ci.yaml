@@ -3,8 +3,8 @@ name: CI
 on: push
 
 env:
-  PYTHON_VERSION: "3.10"
-  POETRY_VERSION: "1.1.12"
+  PYTHON_VERSION: "3.12"
+  POETRY_VERSION: "1.6.1"
   POETRY_HOME: "~/.poetry"
 
 jobs:
@@ -17,9 +17,7 @@ jobs:
         linter: ["isort", "black", "mypy", "flake8"]
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          submodules: true
+        uses: actions/checkout@v4
       - name: Setup project
         uses: ./.github/actions/setup-project
       - name: Run ${{ matrix.linter }}
@@ -41,14 +39,9 @@ jobs:
       PGDATABASE: heim
       PGUSER: heim
       PGPASSWORD: heim
-      # App config
-      AQARA_APP_ID: foo
-      AQARA_APP_KEY: foo
-      AQARA_KEY_ID: foo
-      AQARA_DOMAIN: foo
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           submodules: true
       - name: Setup project

@@ -2,7 +2,7 @@ import asyncio
 from datetime import datetime, timezone
 from importlib import import_module
 from pathlib import Path
-from typing import Any, Optional
+from typing import ParamSpec, TypeVar
 
 import structlog
 
@@ -18,11 +18,13 @@ from .queries import (
 
 logger = structlog.get_logger()
 
+P = ParamSpec("P")
+R = TypeVar("R")
+
 
 def load_tasks() -> None:
     def _load_tasks(path: Path) -> None:
         for api_module in path.glob("*/tasks.py"):
-
             # Construct the name of the module
             relative_path = api_module.relative_to(Path(__file__).parent.parent)
             module_path = ".".join(p.name for p in reversed(relative_path.parents))
@@ -93,11 +95,11 @@ async def run_next_task() -> bool:
 
 async def execute_task(
     *,
-    task: Task,
+    task: Task[P, R],
     task_id: int,
-    arguments: dict[str, Any],
+    arguments: P.kwargs,
     run_at: datetime,
-    from_schedule_id: Optional[int],
+    from_schedule_id: int | None,
     atomic: bool,
 ) -> None:
     """

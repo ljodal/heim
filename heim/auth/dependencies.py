@@ -1,5 +1,3 @@
-from typing import Optional
-
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 
@@ -10,13 +8,13 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")
 
 
 async def get_current_session(
-    session_key: Optional[str] = Depends(oauth2_scheme),
-) -> Optional[Session]:
+    session_key: str | None = Depends(oauth2_scheme),
+) -> Session | None:
     return await get_session(key=session_key) if session_key else None
 
 
 async def current_account(
-    session: Optional[Session] = Depends(get_current_session),
+    session: Session | None = Depends(get_current_session),
 ) -> int:
     if not session:
         raise HTTPException(

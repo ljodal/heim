@@ -8,7 +8,7 @@ from heim.integrations.aqara.tasks import MODEL_TO_RESOURCE_MAPPING
 
 
 @pytest.fixture
-async def aqara_account_id(connection, account_id: int, username: str) -> int:
+async def aqara_account_id(connection: None, account_id: int, username: str) -> int:
     return await create_aqara_account(
         account_id=account_id,
         username=username,
@@ -35,7 +35,7 @@ def aqara_sensor_id() -> str:
 
 @pytest.fixture
 async def sensor_id(
-    connection,
+    connection: None,
     account_id: int,
     aqara_account_id: int,
     location_id: int,

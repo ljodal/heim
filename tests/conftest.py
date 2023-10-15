@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import asyncio
 import os
-from typing import AsyncIterator, Iterator
+from collections.abc import AsyncIterator, Iterator
 
-import asyncpg  # type: ignore
+import asyncpg
 import httpx
 import pytest
 
@@ -12,6 +14,14 @@ from heim.auth.models import Session
 from heim.auth.queries import create_session
 from heim.db.migrations import migrate_db
 from heim.server import app
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    os.environ.setdefault("AQARA_APP_ID", "foo")
+    os.environ.setdefault("AQARA_APP_KEY", "foo")
+    os.environ.setdefault("AQARA_KEY_ID", "foo")
+    os.environ.setdefault("AQARA_DOMAIN", "aqara.example.com")
+
 
 #######################
 # Basic project setup #
@@ -49,23 +59,29 @@ def setup_db() -> Iterator[None]:
         asyncio.run(_drop_db())
 
 
-@pytest.fixture(scope="function")
-async def _connection(setup_db) -> AsyncIterator[asyncpg.Connection]:
+@pytest.fixture
+async def _connection(
+    setup_db: None,
+) -> AsyncIterator[asyncpg.Connection[asyncpg.Record]]:
     connection = await asyncpg.connect()
     try:
         await db.initialize_connection(connection)
         transaction = connection.transaction()
         await transaction.start()
         try:
+            print("Transaction started")
             yield connection
         finally:
+            print("Rolling back")
             await transaction.rollback()
     finally:
         await connection.close()
 
 
-@pytest.fixture(scope="function")
-def connection(_connection: asyncpg.Connection) -> Iterator[asyncpg.Connection]:
+@pytest.fixture
+def connection(
+    _connection: asyncpg.Connection[asyncpg.Record],
+) -> Iterator[asyncpg.Connection[asyncpg.Record]]:
     # We have to set the contextvar in a sync fixture, because async pytest
     # fixtures are executed in a separate task which means they don't share
     # context with the test function.
@@ -89,7 +105,7 @@ def password() -> str:
 
 
 @pytest.fixture
-async def account_id(connection, username: str, password: str) -> int:
+async def account_id(connection: None, username: str, password: str) -> int:
     return await create_account(username=username, password=password)
 
 
@@ -100,7 +116,7 @@ def coordinate() -> tuple[float, float]:
 
 @pytest.fixture
 async def location_id(
-    connection, account_id: int, coordinate: tuple[float, float]
+    connection: None, account_id: int, coordinate: tuple[float, float]
 ) -> int:
     return await create_location(
         account_id=account_id, name="Test location", coordinate=coordinate
@@ -113,7 +129,7 @@ async def location_id(
 
 
 @pytest.fixture
-async def session(connection, account_id: int) -> Session:
+async def session(connection: None, account_id: int) -> Session:
     return await create_session(account_id=account_id)
 
 

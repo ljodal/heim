@@ -5,7 +5,8 @@ from pytest_mock import MockerFixture
 
 from heim import db
 from heim.integrations.aqara.client import AqaraClient
-from heim.integrations.aqara.tasks import get_aqara_sensor, update_sensor_data
+from heim.integrations.aqara.queries import get_aqara_sensor
+from heim.integrations.aqara.tasks import update_sensor_data
 from heim.integrations.aqara.types import (
     QueryResourceHistoryResult,
     ResourceHistoryPoint,
@@ -27,10 +28,10 @@ async def test_update_sensor_data(
     return_values = [
         QueryResourceHistoryResult(
             data=[
-                ResourceHistoryPoint.construct(
+                ResourceHistoryPoint.model_construct(
                     timestamp=now, resource_id=resource_id, value=1, subject_id="foo"
                 ),
-                ResourceHistoryPoint.construct(
+                ResourceHistoryPoint.model_construct(
                     timestamp=now + timedelta(hours=1),
                     resource_id=resource_id,
                     value=0,

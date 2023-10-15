@@ -2,8 +2,9 @@ import hashlib
 import os
 import string
 import time
+from collections.abc import Iterable
 from datetime import datetime
-from typing import Iterable, Optional, Type, TypeVar
+from typing import Any, TypeVar
 
 import httpx
 
@@ -46,7 +47,6 @@ class AqaraClient:
     ########
 
     async def get_auth_code(self, *, account: str) -> AuthCodeResult:
-
         return await self._request(
             intent="config.auth.getAuthCode",
             data={"account": account, "accountType": 0, "accessTokenValidity": "1h"},
@@ -54,7 +54,6 @@ class AqaraClient:
         )
 
     async def get_token(self, *, code: str, account: str) -> AccessTokenResult:
-
         return await self._request(
             intent="config.auth.getToken",
             data={"authCode": code, "account": account, "accountType": 0},
@@ -62,7 +61,6 @@ class AqaraClient:
         )
 
     async def refresh_token(self, *, refresh_token: str) -> RefreshTokenResult:
-
         return await self._request(
             intent="config.auth.refreshToken",
             data={"refreshToken": refresh_token},
@@ -117,9 +115,8 @@ class AqaraClient:
         device_id: str,
         resource_ids: Iterable[str],
         from_time: datetime,
-        scan_id: Optional[str] = None,
+        scan_id: str | None = None,
     ) -> QueryResourceHistoryResult:
-
         start_time = str(int(from_time.timestamp() * 1000))
 
         return await self._request(
@@ -142,7 +139,7 @@ class AqaraClient:
             self.client = httpx.AsyncClient()
         return self
 
-    async def __aexit__(self, *args) -> None:
+    async def __aexit__(self, *args: Any) -> None:
         await self.close()
 
     ####################
@@ -152,9 +149,8 @@ class AqaraClient:
     T = TypeVar("T")
 
     async def _request(
-        self, intent: Intent, data: IntentData, response_type: Type[BaseResponse[T]]
+        self, intent: Intent, data: IntentData, response_type: type[BaseResponse[T]]
     ) -> T:
-
         if not self.client:
             self.client = httpx.AsyncClient()
 
@@ -169,7 +165,6 @@ class AqaraClient:
         return self._check_response(response, response_type)
 
     def _prepare_auth(self, request: httpx.Request) -> None:
-
         timestamp = str(int(time.time() * 1000))
         nonce = get_nonce(24)
 
@@ -192,13 +187,11 @@ class AqaraClient:
         request.headers["Sign"] = signature
 
     def _check_response(
-        self, response: httpx.Response, response_type: Type[BaseResponse[T]]
+        self, response: httpx.Response, response_type: type[BaseResponse[T]]
     ) -> T:
-
         response.raise_for_status()
 
-        data = response.json()
-        parsed_response = response_type.parse_obj(data)
+        parsed_response = response_type.model_validate_json(response.text)
 
         if parsed_response.code == 108:
             raise ExpiredAccessToken("Access token has expired", parsed_response)

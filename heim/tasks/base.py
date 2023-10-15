@@ -1,34 +1,40 @@
+from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Awaitable, Callable, Optional, Protocol, TypeVar, cast
+from typing import Any, Generic, ParamSpec, TypeVar
 
 from .queries import create_scheduled_task, queue_task
 
-T = TypeVar("T", bound=Callable[..., Awaitable[Any]])
+P = ParamSpec("P")
+R = TypeVar("R")
 
 
-class Task(Protocol):
-
+@dataclass(frozen=True, kw_only=True)
+class Task(Generic[P, R]):
+    func: Callable[P, Awaitable[R]]
     name: str
     allow_skip: bool
     atomic: bool
     timeout: int
 
-    def __call__(self, *args, **kwargs) -> Awaitable[Any]:
-        ...
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> Awaitable[R]:
+        return self.func(*args, **kwargs)
 
     async def defer(
-        self, *, arguments: dict[str, Any], run_at: Optional[datetime] = ...
+        self, *, arguments: P.kwargs, run_at: datetime | None = None
     ) -> int:
-        ...
+        return await queue_task(name=self.name, arguments=arguments, run_at=run_at)
 
-    async def schedule(self, *, arguments: dict[str, Any], cron_expression: str) -> int:
-        ...
+    async def schedule(self, *, arguments: P.kwargs, cron_expression: str) -> int:
+        return await create_scheduled_task(
+            name=self.name, arguments=arguments, cron_expression=cron_expression
+        )
 
 
-_TASK_REGISTRY: dict[str, Task] = {}
+_TASK_REGISTRY: dict[str, Task[Any, Any]] = {}
 
 
-def get_task(*, name: str) -> Task:
+def get_task(*, name: str) -> Task[Any, Any]:
     """
     Get a task by name
     """
@@ -38,7 +44,7 @@ def get_task(*, name: str) -> Task:
 
 def task(
     *, name: str, allow_skip: bool = False, atomic: bool = True, timeout: int = 10
-) -> Callable[[T], T]:
+) -> Callable[[Callable[P, Awaitable[R]]], Task[P, R]]:
     """
     Decorator for declaring a task that can be executed in the background.
 
@@ -48,33 +54,16 @@ def task(
     :param timeout:    The maximum time to allow the task to execute for
     """
 
-    async def defer(
-        *, arguments: dict[str, Any], run_at: Optional[datetime] = None
-    ) -> int:
-        """
-        Schedule the task for execution at a later time.
-        """
-
-        return await queue_task(name=name, arguments=arguments, run_at=run_at)
-
-    async def schedule(*, arguments: dict[str, Any], cron_expression: str) -> int:
-        """
-        Create a schedule to execute this task.
-        """
-
-        return await create_scheduled_task(
-            name=name, arguments=arguments, cron_expression=cron_expression
-        )
-
-    def _inner(func: T) -> T:
+    def _inner(func: Callable[P, Awaitable[R]]) -> Task[P, R]:
         assert name not in _TASK_REGISTRY
-        _TASK_REGISTRY[name] = cast(Task, func)
-        func.defer = defer  # type: ignore
-        func.schedule = schedule  # type: ignore
-        func.name = name  # type: ignore
-        func.allow_skip = allow_skip  # type: ignore
-        func.atomic = atomic  # type: ignore
-        func.timeout = timeout  # type: ignore
-        return func
+        task = Task(
+            func=func,
+            name=name,
+            allow_skip=allow_skip,
+            atomic=atomic,
+            timeout=timeout,
+        )
+        _TASK_REGISTRY[name] = task
+        return task
 
     return _inner
