@@ -134,14 +134,17 @@ async def get_aqara_sensor(
                 FROM sensor_measurement
                 WHERE sensor_id=sensor_id
             )
-        FROM aqara_sensor
-        WHERE aqara_account_id = $1 AND sensor_id = $2
+        FROM aqara_sensor s
+        JOIN aqara_account a ON s.aqara_account_id = a.id
+        WHERE a.account_id = $1 AND sensor_id = $2
         """,
         account_id,
         sensor_id,
     )
     if not row:
-        raise ValueError(f"No such Aqara sensor: {sensor_id}")
+        raise ValueError(
+            f"No Aqara sensor with id={sensor_id} under account {account_id}"
+        )
     aqara_id, model, last_update_time = row
 
     return aqara_id, model, last_update_time

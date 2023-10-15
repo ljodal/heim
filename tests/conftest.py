@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import os
 from collections.abc import AsyncIterator, Iterator
@@ -57,7 +59,7 @@ def setup_db() -> Iterator[None]:
         asyncio.run(_drop_db())
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 async def _connection(
     setup_db: None,
 ) -> AsyncIterator[asyncpg.Connection[asyncpg.Record]]:
@@ -67,14 +69,16 @@ async def _connection(
         transaction = connection.transaction()
         await transaction.start()
         try:
+            print("Transaction started")
             yield connection
         finally:
+            print("Rolling back")
             await transaction.rollback()
     finally:
         await connection.close()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def connection(
     _connection: asyncpg.Connection[asyncpg.Record],
 ) -> Iterator[asyncpg.Connection[asyncpg.Record]]:
