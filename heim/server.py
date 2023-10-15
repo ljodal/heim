@@ -4,6 +4,7 @@ from pathlib import Path
 
 import sentry_sdk
 from fastapi import FastAPI
+from prometheus_fastapi_instrumentator import Instrumentator
 from sentry_sdk.integrations.asyncpg import AsyncPGIntegration
 
 from . import db
@@ -18,6 +19,8 @@ sentry_sdk.init(
 )
 
 app = FastAPI()
+
+Instrumentator().instrument(app).expose(app)
 
 
 def load_apps(path: Path) -> None:
