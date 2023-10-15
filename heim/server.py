@@ -1,9 +1,21 @@
+import os
 from importlib import import_module
 from pathlib import Path
 
+import sentry_sdk
 from fastapi import FastAPI
+from sentry_sdk.integrations.asyncpg import AsyncPGIntegration
 
 from . import db
+
+sentry_sdk.init(
+    traces_sample_rate=1.0,
+    profiles_sample_rate=1.0,
+    integrations=[
+        AsyncPGIntegration(),
+    ],
+    debug="DEBUG" in os.environ,
+)
 
 app = FastAPI()
 
@@ -39,3 +51,8 @@ async def shutdown() -> None:
 async def get_health() -> dict[str, str]:
     await db.fetch("SELECT 1")
     return {"status": "pass"}
+
+
+@app.get("/sentry-debug")
+async def trigger_error() -> None:
+    1 / 0

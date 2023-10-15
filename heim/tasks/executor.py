@@ -4,6 +4,7 @@ from importlib import import_module
 from pathlib import Path
 from typing import ParamSpec, TypeVar
 
+import sentry_sdk
 import structlog
 
 from .. import db
@@ -65,28 +66,32 @@ async def run_next_task() -> bool:
             await task_started(task_id=task_id)
 
             if task.atomic:
-                await asyncio.shield(
-                    execute_task(
-                        task=task,
-                        task_id=task_id,
-                        arguments=arguments,
-                        run_at=run_at,
-                        from_schedule_id=from_schedule_id,
-                        atomic=True,
+                with sentry_sdk.start_transaction(op="task", name=name) as transaction:
+                    transaction.set_data("arguments", arguments)
+                    await asyncio.shield(
+                        execute_task(
+                            task=task,
+                            task_id=task_id,
+                            arguments=arguments,
+                            run_at=run_at,
+                            from_schedule_id=from_schedule_id,
+                            atomic=True,
+                        )
                     )
-                )
 
     if _task and not task.atomic:
-        await asyncio.shield(
-            execute_task(
-                task=task,
-                task_id=task_id,
-                arguments=arguments,
-                run_at=run_at,
-                from_schedule_id=from_schedule_id,
-                atomic=False,
+        with sentry_sdk.start_transaction(op="task", name=name) as transaction:
+            transaction.set_data("arguments", arguments)
+            await asyncio.shield(
+                execute_task(
+                    task=task,
+                    task_id=task_id,
+                    arguments=arguments,
+                    run_at=run_at,
+                    from_schedule_id=from_schedule_id,
+                    atomic=False,
+                )
             )
-        )
 
         return True
 
@@ -126,6 +131,7 @@ async def execute_task(
             task_arguments=arguments,
         )
         await task_failed(task_id=task_id)
+        sentry_sdk.capture_exception()
     else:
         await task_finished(task_id=task_id)
         if from_schedule_id:

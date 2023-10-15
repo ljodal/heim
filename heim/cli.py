@@ -1,11 +1,23 @@
 import asyncio
 import inspect
+import os
 from collections.abc import Callable
 from importlib import import_module
 from pathlib import Path
 from typing import Any
 
 import click
+import sentry_sdk
+from sentry_sdk.integrations.asyncpg import AsyncPGIntegration
+
+sentry_sdk.init(
+    traces_sample_rate=1.0,
+    profiles_sample_rate=1.0,
+    integrations=[
+        AsyncPGIntegration(),
+    ],
+    debug="DEBUG" in os.environ,
+)
 
 
 class AsyncAwareContext(click.Context):

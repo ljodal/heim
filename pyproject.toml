@@ -17,6 +17,7 @@ uvicorn = "^0.23.2"
 gunicorn = "^21.2.0"
 click = "^8.0.3"
 python-multipart = "^0.0.5"
+sentry-sdk = {version = "^1.32.0", extras = ["fastapi", "asyncpg"]}
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.9.1"
