@@ -4,7 +4,7 @@ Helpers to set up the database
 
 from pathlib import Path
 
-import asyncpg  # type: ignore
+import asyncpg
 
 from .. import db
 
@@ -21,7 +21,7 @@ async def migrate_db() -> None:
                 await apply_migration(path=migrations_file, con=con)
 
 
-async def create_migrations_table(*, con: asyncpg.Connection) -> None:
+async def create_migrations_table(*, con: asyncpg.Connection[asyncpg.Record]) -> None:
     await con.execute(
         """
         create table if not exists migrations (
@@ -32,11 +32,15 @@ async def create_migrations_table(*, con: asyncpg.Connection) -> None:
     )
 
 
-async def get_applied_migrations(*, con: asyncpg.Connection) -> list[str]:
+async def get_applied_migrations(
+    *, con: asyncpg.Connection[asyncpg.Record]
+) -> list[str]:
     return [row["name"] for row in await con.fetch("SELECT name FROM migrations")]
 
 
-async def apply_migration(*, path: Path, con: asyncpg.Connection) -> None:
+async def apply_migration(
+    *, path: Path, con: asyncpg.Connection[asyncpg.Record]
+) -> None:
     name = path.stem
 
     print(f"Applying migration {name}")

@@ -26,16 +26,16 @@ load_apps(Path(__file__).parent / "integrations")
 
 
 @app.on_event("startup")
-async def startup():
+async def startup() -> None:
     await db.connect()
 
 
 @app.on_event("shutdown")
-async def shutdown():
+async def shutdown() -> None:
     await db.disconnect()
 
 
 @app.get("/health")
-async def get_health() -> dict:
+async def get_health() -> dict[str, str]:
     await db.fetch("SELECT 1")
     return {"status": "pass"}

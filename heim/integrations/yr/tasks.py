@@ -31,6 +31,8 @@ async def load_yr_forecast(
     """
 
     coordinate = await get_forecast_coordinate(forecast_id=forecast_id)
+    if not coordinate:
+        raise RuntimeError(f"Missing coordinate for forecast: {forecast_id}")
 
     response = await get_location_forecast(
         coordinate=coordinate, if_modified_since=if_modified_since
@@ -75,7 +77,7 @@ async def load_yr_forecast(
     if_modified_since = response.headers.get("Last-Modified", None)
 
     # Schedule the task to run again when yr says it's okay.
-    await load_yr_forecast.defer(  # type: ignore
+    await load_yr_forecast.defer(
         arguments={"forecast_id": forecast_id, "if_modified_since": if_modified_since},
         run_at=next_update,
     )

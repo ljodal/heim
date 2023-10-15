@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Generic, Literal, Optional, TypedDict, TypeVar, Union
+from typing import Any, Generic, Literal, Optional, TypedDict, TypeVar, Union
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -89,8 +89,7 @@ class BaseResponse(BaseModel, Generic[T]):
     result: Optional[T] = None
 
     @field_validator("result", mode="before")
-    @classmethod
-    def result_ignore_empty_string(cls, v):
+    def result_ignore_empty_string(cls, v: Any) -> Any:
         return None if v == "" else v
 
     model_config = ConfigDict(alias_generator=to_camel)

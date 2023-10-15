@@ -20,4 +20,4 @@ async def create(*, location_id: int, account_id: int) -> None:
         name="YR", account_id=account_id, location_id=location_id
     )
 
-    await load_yr_forecast.defer(arguments={"forecast_id": forecast_id})  # type: ignore
+    await load_yr_forecast.defer(arguments={"forecast_id": forecast_id})

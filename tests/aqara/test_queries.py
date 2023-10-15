@@ -13,7 +13,9 @@ from heim.integrations.aqara.queries import (
 pytestmark = pytest.mark.asyncio
 
 
-async def test_create_aqara_account(connection, account_id: int, username: str) -> None:
+async def test_create_aqara_account(
+    connection: None, account_id: int, username: str
+) -> None:
     aqara_account_id = await create_aqara_account(
         account_id=account_id,
         username=username,
@@ -25,7 +27,7 @@ async def test_create_aqara_account(connection, account_id: int, username: str) 
 
 
 async def test_create_aqara_sensor(
-    connection,
+    connection: None,
     account_id: int,
     aqara_account_id: int,
     location_id: int,
@@ -43,7 +45,7 @@ async def test_create_aqara_sensor(
 
 
 async def test_get_aqara_sensor(
-    connection, account_id: int, aqara_sensor_id: int, sensor_id: int
+    connection: None, account_id: int, aqara_sensor_id: int, sensor_id: int
 ) -> None:
     aqara_id, model, last_update_time = await get_aqara_sensor(
         account_id=account_id, sensor_id=sensor_id

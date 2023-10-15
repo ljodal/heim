@@ -3,7 +3,7 @@ import os
 import string
 import time
 from datetime import datetime
-from typing import Iterable, Optional, Type, TypeVar
+from typing import Any, Iterable, Optional, Type, TypeVar
 
 import httpx
 
@@ -138,7 +138,7 @@ class AqaraClient:
             self.client = httpx.AsyncClient()
         return self
 
-    async def __aexit__(self, *args) -> None:
+    async def __aexit__(self, *args: Any) -> None:
         await self.close()
 
     ####################

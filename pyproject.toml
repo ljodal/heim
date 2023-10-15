@@ -30,6 +30,7 @@ pytest = "^7.4.2"
 pytest-asyncio = "^0.21.1"
 pytest-mock = "^3.6.1"
 pytest-cov = "^4.1.0"
+asyncpg-stubs = "^0.28.0"
 
 [tool.poetry.group.lsp]
 optional = true
@@ -59,6 +60,7 @@ src_paths= ["heim", "test"]
 python_version = "3.11"
 files = ["heim", "tests"]
 plugins = ["pydantic.mypy"]
+strict = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

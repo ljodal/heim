@@ -2,6 +2,7 @@ import asyncio
 import inspect
 from importlib import import_module
 from pathlib import Path
+from typing import Any, Callable
 
 import click
 
@@ -11,10 +12,10 @@ class AsyncAwareContext(click.Context):
     A click context that invokes async functions with asyncio.run.
     """
 
-    def invoke(self, *args, **kwargs):
+    def invoke(self, __callback: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
         r = super().invoke(*args, **kwargs)
         if inspect.isawaitable(r):
-            return asyncio.run(r)
+            return asyncio.run(r)  # type: ignore[arg-type]
         else:
             return r
 

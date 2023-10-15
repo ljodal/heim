@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 
 from ... import db
 from .models import AqaraAccount
@@ -17,7 +17,7 @@ async def create_aqara_account(
     refresh_token: str,
     expires_at: datetime,
 ) -> int:
-    return await db.fetchval(
+    return await db.fetchval(  # type: ignore[no-any-return]
         """
         INSERT INTO aqara_account (
             account_id, username, access_token, refresh_token, expires_at
@@ -46,10 +46,14 @@ async def get_aqara_account(
         """,
         account_id,
     )
+    if not row:
+        raise ValueError(f"No such Aqara account: {account_id}")
     return AqaraAccount.model_validate(dict(row))
 
 
-async def update_aqara_account(account: AqaraAccount, /, **updates) -> AqaraAccount:
+async def update_aqara_account(
+    account: AqaraAccount, /, **updates: Any
+) -> AqaraAccount:
     # Generate a list of changed fields. This ensures that we do use the
     # potentially untrused input in updates.
     changed_fields = {}
@@ -120,7 +124,7 @@ async def get_aqara_sensor(
     latest measurement we have from the sensor.
     """
 
-    aqara_id, model, last_update_time = await db.fetchrow(
+    row = await db.fetchrow(
         """
         SELECT
             aqara_id,
@@ -130,12 +134,14 @@ async def get_aqara_sensor(
                 FROM sensor_measurement
                 WHERE sensor_id=sensor_id
             )
-        FROM aqara_sensor s
-        JOIN aqara_account a ON s.aqara_account_id = a.id
-        WHERE a.account_id = $1 AND sensor_id = $2
+        FROM aqara_sensor
+        WHERE aqara_account_id = $1 AND sensor_id = $2
         """,
         account_id,
         sensor_id,
     )
+    if not row:
+        raise ValueError(f"No such Aqara sensor: {sensor_id}")
+    aqara_id, model, last_update_time = row
 
     return aqara_id, model, last_update_time

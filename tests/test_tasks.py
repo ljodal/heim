@@ -13,8 +13,8 @@ async def my_test_task(*, arg: int) -> None:
     pass
 
 
-async def test_schedule_without_time_task(connection) -> None:
-    await my_test_task.defer(arguments={"arg": 1})  # type: ignore
+async def test_schedule_without_time_task(connection: None) -> None:
+    await my_test_task.defer(arguments={"arg": 1})
 
     task = await get_next_task()
     assert task
@@ -27,9 +27,9 @@ async def test_schedule_without_time_task(connection) -> None:
     assert from_schedule_id is None
 
 
-async def test_schedule_with_time_task(connection) -> None:
+async def test_schedule_with_time_task(connection: None) -> None:
     run_at = datetime.now(timezone.utc) + timedelta(days=1)
-    await my_test_task.defer(arguments={"arg": 1}, run_at=run_at)  # type: ignore
+    await my_test_task.defer(arguments={"arg": 1}, run_at=run_at)
 
     task = await get_next_task()
     assert not task

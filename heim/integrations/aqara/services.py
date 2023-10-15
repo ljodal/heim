@@ -17,7 +17,7 @@ logger = structlog.get_logger()
 
 
 def with_aqara_client(
-    func: Callable[Concatenate[AqaraClient, P], Awaitable[R]]  # type: ignore
+    func: Callable[Concatenate[AqaraClient, P], Awaitable[R]]
 ) -> Callable[P, Awaitable[R]]:
     """
     A decorator that injects an aqara client to the decorated function. The

@@ -2,7 +2,7 @@ import asyncio
 from datetime import datetime, timezone
 from importlib import import_module
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional, ParamSpec, TypeVar
 
 import structlog
 
@@ -17,6 +17,9 @@ from .queries import (
 )
 
 logger = structlog.get_logger()
+
+P = ParamSpec("P")
+R = TypeVar("R")
 
 
 def load_tasks() -> None:
@@ -92,9 +95,9 @@ async def run_next_task() -> bool:
 
 async def execute_task(
     *,
-    task: Task,
+    task: Task[P, R],
     task_id: int,
-    arguments: dict[str, Any],
+    arguments: P.kwargs,
     run_at: datetime,
     from_schedule_id: Optional[int],
     atomic: bool,

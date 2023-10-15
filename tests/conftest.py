@@ -2,7 +2,7 @@ import asyncio
 import os
 from typing import AsyncIterator, Iterator
 
-import asyncpg  # type: ignore
+import asyncpg
 import httpx
 import pytest
 
@@ -58,7 +58,9 @@ def setup_db() -> Iterator[None]:
 
 
 @pytest.fixture(scope="function")
-async def _connection(setup_db) -> AsyncIterator[asyncpg.Connection]:
+async def _connection(
+    setup_db: None,
+) -> AsyncIterator[asyncpg.Connection[asyncpg.Record]]:
     connection = await asyncpg.connect()
     try:
         await db.initialize_connection(connection)
@@ -73,7 +75,9 @@ async def _connection(setup_db) -> AsyncIterator[asyncpg.Connection]:
 
 
 @pytest.fixture(scope="function")
-def connection(_connection: asyncpg.Connection) -> Iterator[asyncpg.Connection]:
+def connection(
+    _connection: asyncpg.Connection[asyncpg.Record],
+) -> Iterator[asyncpg.Connection[asyncpg.Record]]:
     # We have to set the contextvar in a sync fixture, because async pytest
     # fixtures are executed in a separate task which means they don't share
     # context with the test function.
@@ -97,7 +101,7 @@ def password() -> str:
 
 
 @pytest.fixture
-async def account_id(connection, username: str, password: str) -> int:
+async def account_id(connection: None, username: str, password: str) -> int:
     return await create_account(username=username, password=password)
 
 
@@ -108,7 +112,7 @@ def coordinate() -> tuple[float, float]:
 
 @pytest.fixture
 async def location_id(
-    connection, account_id: int, coordinate: tuple[float, float]
+    connection: None, account_id: int, coordinate: tuple[float, float]
 ) -> int:
     return await create_location(
         account_id=account_id, name="Test location", coordinate=coordinate
@@ -121,7 +125,7 @@ async def location_id(
 
 
 @pytest.fixture
-async def session(connection, account_id: int) -> Session:
+async def session(connection: None, account_id: int) -> Session:
     return await create_session(account_id=account_id)
 
 

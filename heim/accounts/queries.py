@@ -1,3 +1,7 @@
+from typing import cast
+
+import asyncpg
+
 from .. import db
 from .models import Location
 from .utils import hash_password
@@ -8,11 +12,12 @@ async def create_account(*, username: str, password: str) -> int:
 
     hashed_password = hash_password(password)
 
-    return await db.fetchval(
+    value: int = await db.fetchval(
         "INSERT INTO account (username, password) VALUES ($1, $2) RETURNING id",
         username,
         hashed_password,
     )
+    return value
 
 
 async def get_account(*, username: str) -> tuple[int, str] | None:
@@ -20,9 +25,10 @@ async def get_account(*, username: str) -> tuple[int, str] | None:
     Get an account based on username. Returns the account_id and password hash.
     """
 
-    return await db.fetchrow(
+    account: asyncpg.Record | None = await db.fetchrow(
         "SELECT id, password FROM account WHERE username = $1", username
     )
+    return cast(tuple[int, str] | None, account)
 
 
 async def create_location(
@@ -30,7 +36,7 @@ async def create_location(
 ) -> int:
     """Create a new location"""
 
-    return await db.fetchval(
+    location_id: int = await db.fetchval(
         """
         INSERT INTO location (account_id, name, coordinate) VALUES ($1, $2, $3)
         RETURNING id
@@ -39,6 +45,7 @@ async def create_location(
         name,
         coordinate,
     )
+    return location_id
 
 
 async def get_locations(*, account_id: int) -> list[Location]:
