@@ -1,6 +1,7 @@
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Awaitable, Callable, Generic, Optional, ParamSpec, TypeVar
+from typing import Any, Generic, ParamSpec, TypeVar
 
 from .queries import create_scheduled_task, queue_task
 
@@ -20,7 +21,7 @@ class Task(Generic[P, R]):
         return self.func(*args, **kwargs)
 
     async def defer(
-        self, *, arguments: P.kwargs, run_at: Optional[datetime] = None
+        self, *, arguments: P.kwargs, run_at: datetime | None = None
     ) -> int:
         return await queue_task(name=self.name, arguments=arguments, run_at=run_at)
 

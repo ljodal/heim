@@ -2,7 +2,7 @@ import asyncio
 from datetime import datetime, timezone
 from importlib import import_module
 from pathlib import Path
-from typing import Optional, ParamSpec, TypeVar
+from typing import ParamSpec, TypeVar
 
 import structlog
 
@@ -99,7 +99,7 @@ async def execute_task(
     task_id: int,
     arguments: P.kwargs,
     run_at: datetime,
-    from_schedule_id: Optional[int],
+    from_schedule_id: int | None,
     atomic: bool,
 ) -> None:
     """

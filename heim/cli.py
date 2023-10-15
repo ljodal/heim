@@ -1,8 +1,9 @@
 import asyncio
 import inspect
+from collections.abc import Callable
 from importlib import import_module
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 import click
 

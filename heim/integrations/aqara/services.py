@@ -1,7 +1,8 @@
 import functools
 import inspect
+from collections.abc import Awaitable, Callable
 from datetime import datetime, timedelta, timezone
-from typing import Awaitable, Callable, Concatenate, ParamSpec, TypeVar, cast
+from typing import Concatenate, ParamSpec, TypeVar, cast
 
 import structlog
 

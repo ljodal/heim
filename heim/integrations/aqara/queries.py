@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from ... import db
 from .models import AqaraAccount
@@ -118,7 +118,7 @@ async def create_aqara_sensor(
 
 async def get_aqara_sensor(
     *, account_id: int, sensor_id: int
-) -> tuple[str, str, Optional[datetime]]:
+) -> tuple[str, str, datetime | None]:
     """
     Get aqara details for a sensor. Returns the aqara_id, model type and the
     latest measurement we have from the sensor.

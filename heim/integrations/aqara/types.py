@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Generic, Literal, Optional, TypedDict, TypeVar, Union
+from typing import Any, Generic, Literal, TypedDict, TypeVar, Union
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -49,7 +49,7 @@ class FetchResourceHistoryData(TypedDict):
     subjectId: str
     resourceIds: list[str]
     startTime: str
-    scanId: Optional[str]
+    scanId: str | None
 
 
 Intent = Union[
@@ -81,12 +81,12 @@ T = TypeVar("T")
 class BaseResponse(BaseModel, Generic[T]):
     code: int
     message: str
-    msg_details: Optional[str] = None
+    msg_details: str | None = None
     request_id: str
 
     # If we do not get a successful response this is not set, so we need to
     # have a default value here.
-    result: Optional[T] = None
+    result: T | None = None
 
     @field_validator("result", mode="before")
     def result_ignore_empty_string(cls, v: Any) -> Any:
@@ -96,7 +96,7 @@ class BaseResponse(BaseModel, Generic[T]):
 
 
 class AuthCodeResult(BaseModel):
-    auth_code: Optional[str] = None
+    auth_code: str | None = None
     model_config = ConfigDict(alias_generator=to_camel)
 
 
@@ -115,7 +115,7 @@ class RefreshTokenResult(BaseModel):
 
 
 class DeviceInfo(BaseModel):
-    parent_did: Optional[str] = None
+    parent_did: str | None = None
     position_id: str
     create_time: datetime
     update_time: datetime
@@ -136,13 +136,13 @@ class QueryDeviceInfoResult(BaseModel):
 
 
 class ResourceInfo(BaseModel):
-    enums: Optional[str] = None
+    enums: str | None = None
     resource_id: str
-    min_value: Optional[int] = None
+    min_value: int | None = None
     unit: int
-    access: Optional[int] = None
-    max_value: Optional[int] = None
-    default_value: Optional[str] = None
+    access: int | None = None
+    max_value: int | None = None
+    default_value: str | None = None
     name: str
     description: str
     model: str
@@ -159,5 +159,5 @@ class ResourceHistoryPoint(BaseModel):
 
 class QueryResourceHistoryResult(BaseModel):
     data: list[ResourceHistoryPoint]
-    scan_id: Optional[str] = None
+    scan_id: str | None = None
     model_config = ConfigDict(alias_generator=to_camel)

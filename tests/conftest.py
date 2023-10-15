@@ -1,6 +1,6 @@
 import asyncio
 import os
-from typing import AsyncIterator, Iterator
+from collections.abc import AsyncIterator, Iterator
 
 import asyncpg
 import httpx

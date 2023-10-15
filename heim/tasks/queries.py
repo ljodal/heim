@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any
 
 from croniter import croniter
 
@@ -38,8 +38,8 @@ async def get_tasks(
 
 
 async def get_next_task(
-    *, now: Optional[datetime] = None
-) -> tuple[int, str, dict[str, Any], datetime, Optional[int]] | None:
+    *, now: datetime | None = None
+) -> tuple[int, str, dict[str, Any], datetime, int | None] | None:
     """
     Get and lock the next pending task. Must be called from within a
     transaction.
@@ -140,7 +140,7 @@ async def create_scheduled_task(
 
 @db.transaction()
 async def queue_next_task(
-    *, schedule_id: int, previous: Optional[datetime] = None
+    *, schedule_id: int, previous: datetime | None = None
 ) -> None:
     task = await db.fetchrow(
         "SELECT name, arguments, expression FROM scheduled_task WHERE id = $1",

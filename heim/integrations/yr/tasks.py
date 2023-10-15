@@ -1,7 +1,7 @@
+from collections.abc import Callable
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from email.utils import parsedate_to_datetime
-from typing import Callable
 
 import structlog
 

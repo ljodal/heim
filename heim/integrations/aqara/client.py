@@ -2,8 +2,9 @@ import hashlib
 import os
 import string
 import time
+from collections.abc import Iterable
 from datetime import datetime
-from typing import Any, Iterable, Optional, Type, TypeVar
+from typing import Any, TypeVar
 
 import httpx
 
@@ -114,7 +115,7 @@ class AqaraClient:
         device_id: str,
         resource_ids: Iterable[str],
         from_time: datetime,
-        scan_id: Optional[str] = None,
+        scan_id: str | None = None,
     ) -> QueryResourceHistoryResult:
         start_time = str(int(from_time.timestamp() * 1000))
 
@@ -148,7 +149,7 @@ class AqaraClient:
     T = TypeVar("T")
 
     async def _request(
-        self, intent: Intent, data: IntentData, response_type: Type[BaseResponse[T]]
+        self, intent: Intent, data: IntentData, response_type: type[BaseResponse[T]]
     ) -> T:
         if not self.client:
             self.client = httpx.AsyncClient()
@@ -186,7 +187,7 @@ class AqaraClient:
         request.headers["Sign"] = signature
 
     def _check_response(
-        self, response: httpx.Response, response_type: Type[BaseResponse[T]]
+        self, response: httpx.Response, response_type: type[BaseResponse[T]]
     ) -> T:
         response.raise_for_status()
 

@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta, timezone
-from typing import Optional
 
 from ...sensors.queries import save_measurements
 from ...sensors.types import Attribute
@@ -35,7 +34,7 @@ async def update_sensor_data(
     *,
     account_id: int,
     sensor_id: int,
-    from_time: Optional[datetime] = None,
+    from_time: datetime | None = None,
 ) -> None:
     """
     Load and save measurements for the given sensor.
