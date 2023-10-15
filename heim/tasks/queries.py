@@ -51,6 +51,7 @@ async def get_next_task(
         FROM task
         WHERE run_at <= $1 AND started_at IS NULL
         ORDER BY run_at
+        LIMIT 1
         FOR UPDATE SKIP LOCKED
         """,
         now or datetime.now(timezone.utc),
