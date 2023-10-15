@@ -53,7 +53,7 @@ async def update_aqara_account(account: AqaraAccount, /, **updates) -> AqaraAcco
     # Generate a list of changed fields. This ensures that we do use the
     # potentially untrused input in updates.
     changed_fields = {}
-    for field in AqaraAccount.__fields__:
+    for field in AqaraAccount.model_fields.keys():
         if field in updates and getattr(account, field) != updates[field]:
             changed_fields[field] = updates[field]
 

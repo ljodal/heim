@@ -1,7 +1,7 @@
 import functools
 import inspect
 from datetime import datetime, timedelta, timezone
-from typing import Awaitable, Callable, Concatenate, ParamSpec, TypeVar
+from typing import Awaitable, Callable, Concatenate, ParamSpec, TypeVar, cast
 
 import structlog
 
@@ -33,15 +33,16 @@ def with_aqara_client(
     assert "account_id" in parameters
 
     @functools.wraps(func)
-    async def inner(*args: P.args, **kwargs: P.kwargs) -> R:  # type: ignore
-        account = await get_aqara_account(account_id=kwargs["account_id"])
+    async def inner(*args: P.args, **kwargs: P.kwargs) -> R:
+        account_id = cast(int, kwargs["account_id"])
+        account = await get_aqara_account(account_id=account_id)
         async with AqaraClient(access_token=account.access_token) as client:
             try:
                 return await func(client, *args, **kwargs)
             except ExpiredAccessToken:
                 logger.warning("Access token has expired, refreshing")
                 # The access token has expired, so refresh it and retry
-                await refresh_access_token(client, account_id=kwargs["account_id"])
+                await refresh_access_token(client, account_id=account_id)
                 return await func(client, *args, **kwargs)
 
     return inner
