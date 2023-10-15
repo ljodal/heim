@@ -14,7 +14,7 @@ class AsyncAwareContext(click.Context):
     """
 
     def invoke(self, __callback: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
-        r = super().invoke(*args, **kwargs)
+        r = super().invoke(__callback, *args, **kwargs)
         if inspect.isawaitable(r):
             return asyncio.run(r)  # type: ignore[arg-type]
         else:
