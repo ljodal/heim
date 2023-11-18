@@ -3,8 +3,6 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Generic, ParamSpec, TypeVar
 
-import sentry_sdk
-
 from .queries import create_scheduled_task, queue_task
 
 P = ParamSpec("P")

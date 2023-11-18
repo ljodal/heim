@@ -1,0 +1,9 @@
+{% extends "layout.html" %}
+
+{% block body %}
+  {% for location in locations %}
+    <h2>{{ location.name }}</h2>
+  {% else %}
+    <h2>You have no locations configured</h2>
+  {% endfor %}
+{% endblock %}

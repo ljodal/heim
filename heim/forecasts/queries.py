@@ -91,6 +91,10 @@ async def get_forecast(*, account_id: int, location_id: int) -> int | None:
 async def get_instances(
     *, forecast_id: int, attribute: Attribute
 ) -> dict[datetime, tuple[datetime, int]]:
+    """
+    Get three instances for the given forecast: latest, 12 hours old and 24 hours old.
+    """
+
     # Figure out which instances we are interested in
     row = await db.fetchrow(
         """

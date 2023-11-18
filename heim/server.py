@@ -22,6 +22,12 @@ app = FastAPI()
 
 Instrumentator().instrument(app).expose(app)
 
+from .frontend.messages import MessagesMiddleware  # noqa
+from .frontend.views import router as frontend_router  # noqa
+
+app.add_middleware(MessagesMiddleware)
+app.include_router(frontend_router)
+
 
 def load_apps(path: Path) -> None:
     for api_module in path.glob("*/api.py"):
