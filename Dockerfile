@@ -30,5 +30,7 @@ RUN apk add --no-cache libffi
 # Copy virtualenv from the builder
 COPY --from=builder /venv /venv
 
+COPY ./heim/frontend/templates ./heim/frontend/templates
+
 ENV PATH="/venv/bin:$PATH" \
     VIRTUAL_ENV="/venv"
