@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 from collections.abc import AsyncIterator, Iterator
 
@@ -21,6 +22,17 @@ def pytest_configure(config: pytest.Config) -> None:
     os.environ.setdefault("AQARA_APP_KEY", "foo")
     os.environ.setdefault("AQARA_KEY_ID", "foo")
     os.environ.setdefault("AQARA_DOMAIN", "aqara.example.com")
+
+
+def pytest_sessionfinish() -> None:
+    """
+    Silence exceptions raised when logging during atexit callbacks
+
+    When pytest is capturing logging the log stream is closed before the
+    process exits, but the Sentry SDK will log a message causing an exception
+    """
+
+    logging.raiseExceptions = False
 
 
 #######################
