@@ -92,6 +92,16 @@ async def task_failed(*, task_id: int) -> None:
     )
 
 
+async def delete_old_tasks() -> None:
+    """
+    Delete tasks that ran more than a week ago
+    """
+
+    await db.execute(
+        "DELETE FROM task WHERE now() - finished_at < '1 week'::interval",
+    )
+
+
 ###################
 # Scheduled tasks #
 ###################
