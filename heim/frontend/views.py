@@ -1,6 +1,6 @@
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Form, Request, Response, status
+from fastapi import APIRouter, Form, Path, Request, Response, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
@@ -17,14 +17,15 @@ templates.env.globals["get_messages"] = get_messages
 fallback_password = hash_password("foobar")
 
 
-@router.get("/", response_class=HTMLResponse)
-async def index(request: Request, account_id: CurrentAccount) -> Response:
+@router.get("/", response_class=RedirectResponse)
+async def index(request: Request, account_id: CurrentAccount) -> RedirectResponse:
     locations = await get_locations(account_id=account_id)
-    context = {"request": request, "locations": locations}
-    return templates.TemplateResponse("index.html", context)
+    return RedirectResponse(
+        url=f"/{locations[0].id}/", status_code=status.HTTP_303_SEE_OTHER
+    )
 
 
-@router.get("/login", response_class=HTMLResponse)
+@router.get("/login/", response_class=HTMLResponse)
 def login(request: Request) -> Response:
     """
     Render the login form. The actual login is handled by the view below
@@ -34,7 +35,7 @@ def login(request: Request) -> Response:
     return templates.TemplateResponse("login.html", context)
 
 
-@router.post("/login", response_class=RedirectResponse)
+@router.post("/login/", response_class=RedirectResponse)
 async def do_login(
     request: Request,
     username: Annotated[str, Form()],
@@ -65,10 +66,25 @@ async def do_login(
     return response
 
 
-@router.get("/logout", response_class=RedirectResponse)
+@router.get("/logout/", response_class=RedirectResponse)
 async def logout(request: Request, session: CookieSession) -> RedirectResponse:
     if session:
         await delete_session(session)
-    response = RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+    response = RedirectResponse(url="/login/", status_code=status.HTTP_303_SEE_OTHER)
     response.delete_cookie("session_id")
     return response
+
+
+@router.get("/{location_id}/", response_class=HTMLResponse)
+async def location_overview(
+    request: Request,
+    account_id: CurrentAccount,
+    location_id: Annotated[int, Path(title="Location ID")],
+) -> Response:
+    locations = await get_locations(account_id=account_id)
+    context = {
+        "request": request,
+        "locations": locations,
+        "current_location_id": location_id,
+    }
+    return templates.TemplateResponse("index.html", context)

@@ -11,7 +11,7 @@ async def get_current_account(session: CookieSession, messages: Messages) -> int
         messages.notice("Login required")
         raise HTTPException(
             status_code=status.HTTP_303_SEE_OTHER,
-            headers={"Location": "/login"},
+            headers={"Location": "/login/"},
         )
 
     return session.account_id

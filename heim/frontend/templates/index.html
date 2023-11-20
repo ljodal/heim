@@ -1,9 +1,33 @@
 {% extends "layout.html" %}
 
 {% block body %}
-  {% for location in locations %}
-    <h2>{{ location.name }}</h2>
-  {% else %}
-    <h2>You have no locations configured</h2>
-  {% endfor %}
+  <nav class="navbar navbar-expand-lg navbar-dark bg-danger">
+    <div class="container-fluid">
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#location-switcher" aria-controls="location-switcher" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <span class="navbar-brand">
+        Heim
+      </span>
+
+      <div class="collapse navbar-collapse justify-content-md-center" id="location-switcher">
+        <ul class="navbar-nav">
+          {% for location in locations %}
+            <li class="nav-item">
+              <a class="nav-link {% if location.id == current_location_id %}active{% endif %}" href="/{{ location.id }}/">
+                {{ location.name }}
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <ul class="navbar-nav">
+        <li class="nav-item">
+          <a href="/logout/" class="nav-link">Log out</a>
+        </li>
+      </ul>
+    </div>
+  </nav>
 {% endblock %}
