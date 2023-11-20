@@ -1,6 +1,8 @@
 import os
+from contextlib import asynccontextmanager
 from importlib import import_module
 from pathlib import Path
+from typing import AsyncIterator
 
 import sentry_sdk
 from fastapi import FastAPI
@@ -18,7 +20,14 @@ sentry_sdk.init(
     debug="DEBUG" in os.environ,
 )
 
-app = FastAPI()
+
+@asynccontextmanager
+async def configure_database(app: FastAPI) -> AsyncIterator[None]:
+    async with db.setup_pool():
+        yield
+
+
+app = FastAPI(lifespan=configure_database)
 
 Instrumentator().instrument(app).expose(app)
 
@@ -44,16 +53,6 @@ def load_apps(path: Path) -> None:
 
 load_apps(Path(__file__).parent)
 load_apps(Path(__file__).parent / "integrations")
-
-
-@app.on_event("startup")
-async def startup() -> None:
-    await db.connect()
-
-
-@app.on_event("shutdown")
-async def shutdown() -> None:
-    await db.disconnect()
 
 
 @app.get("/health")
