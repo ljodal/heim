@@ -3,24 +3,20 @@
 {% block body %}
   <nav class="navbar navbar-expand-lg navbar-dark bg-danger">
     <div class="container-fluid">
-      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#location-switcher" aria-controls="location-switcher" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-
       <span class="navbar-brand">
         Heim
       </span>
 
-      <div class="collapse navbar-collapse justify-content-md-center" id="location-switcher">
-        <ul class="navbar-nav">
-          {% for location in locations %}
-            <li class="nav-item">
-              <a class="nav-link {% if location.id == current_location_id %}active{% endif %}" href="/{{ location.id }}/">
+      <div class="justify-content-md-center" id="location-switcher">
+        <div class="d-flex">
+          <div class="btn-group">
+            {% for location in locations %}
+              <a class="btn btn-outline-light btn-sm {% if location.id == current_location_id %}active{% endif %}" href="/{{ location.id }}/">
                 {{ location.name }}
               </a>
-            </li>
-          {% endfor %}
-        </ul>
+            {% endfor %}
+          </div>
+        </div>
       </div>
 
       <ul class="navbar-nav">
