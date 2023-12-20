@@ -1,6 +1,6 @@
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Form, Path, Request, Response, status
+from fastapi import APIRouter, Form, HTTPException, Path, Request, Response, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
@@ -82,9 +82,15 @@ async def location_overview(
     location_id: Annotated[int, Path(title="Location ID")],
 ) -> Response:
     locations = await get_locations(account_id=account_id)
+    try:
+        current_location = next(
+            location for location in locations if location.id == location_id
+        )
+    except StopIteration:
+        raise HTTPException(status_code=404, detail="Unknown location")
     context = {
         "request": request,
         "locations": locations,
-        "current_location_id": location_id,
+        "current_location": current_location,
     }
     return templates.TemplateResponse("index.html", context)
