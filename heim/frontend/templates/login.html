@@ -1,10 +1,14 @@
 {% extends "layout.html" %}
 
 {% block body %}
-<main class="container">
-  <form class="col-md-4 offset-md-4" method="POST">
-    <div class="text-center mb-3 mt-3">
-      <div class="rounded-circle" style="height:100px;width:100px;background-color:lightgray;display:inline-block;"></div>
+<main class="container d-flex align-items-center justify-content-center" style="min-height:100vh;">
+  <form class="w-100" style="max-width:400px;" method="POST">
+    <div class="text-center mb-4">
+      <svg viewBox="0 0 64 64" width="150" height="150">
+        <path d="M12 58 L12 32 L32 8 L52 32 L52 58 Z" fill="none" stroke="#dc3545" stroke-width="4" stroke-linejoin="round"></path>
+        <rect x="24" y="36" width="16" height="14" fill="none" stroke="#dc3545" stroke-width="3" rx="1"></rect>
+        <line x1="32" y1="36" x2="32" y2="50" stroke="#dc3545" stroke-width="2"></line>
+      </svg>
     </div>
 
     {% for message in get_messages(request) %}
@@ -36,7 +40,6 @@
       />
       <label class="form-label" for="password">Password</label>
     </div>
-
 
     <!-- Submit button -->
     <div class="mb-3 text-center">
