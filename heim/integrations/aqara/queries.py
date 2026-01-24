@@ -116,6 +116,25 @@ async def create_aqara_sensor(
     return sensor_id
 
 
+async def get_aqara_sensors(
+    *, account_id: int
+) -> list[tuple[int, str, str]]:
+    """
+    Get all aqara sensors for an account. Returns list of (sensor_id, name, model).
+    """
+    rows = await db.fetch(
+        """
+        SELECT s.sensor_id, s.name, s.sensor_type
+        FROM aqara_sensor s
+        JOIN aqara_account a ON s.aqara_account_id = a.id
+        WHERE a.account_id = $1
+        ORDER BY s.sensor_id
+        """,
+        account_id,
+    )
+    return [(row["sensor_id"], row["name"], row["sensor_type"]) for row in rows]
+
+
 async def get_aqara_sensor(
     *, account_id: int, sensor_id: int
 ) -> tuple[str, str, datetime | None]:

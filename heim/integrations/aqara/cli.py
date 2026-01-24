@@ -4,7 +4,7 @@ import click
 
 from ... import db
 from .client import AqaraClient
-from .queries import create_aqara_account, create_aqara_sensor
+from .queries import create_aqara_account, create_aqara_sensor, get_aqara_sensors
 from .services import with_aqara_client
 from .tasks import update_sensor_data
 
@@ -136,16 +136,34 @@ async def create_devices(
 
 
 @devices.command(name="backfill")
-@click.option("--sensor-id", type=int, help="Sensor ID to backfill", required=True)
+@click.option("--sensor-id", type=int, help="Sensor ID to backfill")
 @click.option("--account-id", "-a", type=int, help="Account id", required=True)
 @click.option("--days", type=int, default=7, help="Number of days to backfill")
+@click.pass_context
 @db.setup()
-async def backfill_sensor(*, account_id: int, sensor_id: int, days: int) -> None:
+async def backfill_sensor(
+    ctx: click.Context, *, account_id: int, sensor_id: int | None, days: int
+) -> None:
     """
     Backfill historical data for a sensor, ignoring any existing measurements.
 
     Queries in 7-day windows due to Aqara API limits.
+    If no sensor-id is provided, lists available sensors.
     """
+    if sensor_id is None:
+        sensors = await get_aqara_sensors(account_id=account_id)
+        if not sensors:
+            click.echo("No sensors found for this account.")
+            return
+
+        click.echo("Available sensors:\n")
+        click.echo(f"  {'ID':>4}  {'Name':<32}  Model")
+        click.echo(f"  {'--':>4}  {'----':<32}  -----")
+        for sid, name, model in sensors:
+            click.echo(f"  {sid:>4}  {name:<32}  {model}")
+        click.echo("\nUse --sensor-id to backfill a specific sensor.")
+        ctx.exit(1)
+
     now = datetime.now(timezone.utc)
     click.echo(f"Backfilling sensor {sensor_id}, {days} days back in 7-day windows...")
 
