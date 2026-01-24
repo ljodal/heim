@@ -112,7 +112,7 @@ async def update_sensor_data(
 
     # Convert to our measurement format and save
     total_measurements = 0
-    values: list[tuple[Attribute, datetime, int]] = []
+    values: list[tuple[Attribute, datetime, float]] = []
 
     for measure_type, data_points in measurements.items():
         attribute = attribute_mapping.get(measure_type)
@@ -121,20 +121,20 @@ async def update_sensor_data(
 
         for timestamp, value in data_points:
             if value is not None:
-                # Convert to integer (our DB stores integers)
+                # Convert value based on attribute type
                 # Temperature is in Celsius with 1 decimal, multiply by 10
-                # Pressure is in mbar, store as-is
+                # Pressure is in mbar, store with 1 decimal precision
                 # Humidity is percentage, store as-is
                 # CO2 is ppm, store as-is
                 # Noise is dB, store as-is
                 if attribute == Attribute.AIR_TEMPERATURE:
-                    int_value = int(value * 10)
+                    float_value = value * 10
                 elif attribute == Attribute.AIR_PRESSURE:
-                    int_value = int(value * 10)  # Store with 1 decimal precision
+                    float_value = value * 10  # Store with 1 decimal precision
                 else:
-                    int_value = int(value)
+                    float_value = value
 
-                values.append((attribute, timestamp, int_value))
+                values.append((attribute, timestamp, float_value))
                 total_measurements += 1
 
     if values:
