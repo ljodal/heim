@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from croniter import croniter
@@ -20,7 +20,7 @@ async def queue_task(
         """,
         name,
         arguments,
-        run_at or datetime.now(timezone.utc),
+        run_at or datetime.now(UTC),
     )
 
 
@@ -52,7 +52,7 @@ async def get_next_task(
         LIMIT 1
         FOR UPDATE SKIP LOCKED
         """,
-        now or datetime.now(timezone.utc),
+        now or datetime.now(UTC),
     )
 
 
@@ -114,7 +114,7 @@ async def create_scheduled_task(
         cron_expression,
     )
 
-    run_at = croniter(cron_expression, datetime.now(timezone.utc)).get_next(datetime)
+    run_at = croniter(cron_expression, datetime.now(UTC)).get_next(datetime)
 
     task_id: int = await db.fetchval(
         """
@@ -150,7 +150,7 @@ async def queue_next_task(
 
     name, arguments, cron_expression = task
 
-    previous = previous or datetime.now(timezone.utc)
+    previous = previous or datetime.now(UTC)
     run_at = croniter(cron_expression, previous).get_next(datetime)
 
     task_id: int = await db.fetchval(

@@ -1,8 +1,8 @@
 import asyncio
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from importlib import import_module
 from pathlib import Path
-from typing import Any, TypeVar
+from typing import Any
 
 import sentry_sdk
 import structlog
@@ -18,8 +18,6 @@ from .queries import (
 )
 
 logger = structlog.get_logger()
-
-R = TypeVar("R")
 
 
 def load_tasks() -> None:
@@ -97,7 +95,7 @@ async def run_next_task() -> bool:
     return False
 
 
-async def execute_task(
+async def execute_task[R](
     *,
     task: Task[..., R],
     task_id: int,
@@ -136,7 +134,5 @@ async def execute_task(
         if from_schedule_id:
             await queue_next_task(
                 schedule_id=from_schedule_id,
-                previous=(
-                    run_at if not task.allow_skip else datetime.now(timezone.utc)
-                ),
+                previous=(run_at if not task.allow_skip else datetime.now(UTC)),
             )

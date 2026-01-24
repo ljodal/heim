@@ -1,7 +1,6 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
-
 from heim import db
 from heim.accounts.utils import get_random_string
 from heim.integrations.aqara.queries import (
@@ -21,7 +20,7 @@ async def test_create_aqara_account(
         username=username,
         access_token=get_random_string(10),
         refresh_token=get_random_string(10),
-        expires_at=datetime.now(timezone.utc) + timedelta(hours=1),
+        expires_at=datetime.now(UTC) + timedelta(hours=1),
     )
     assert aqara_account_id > 0
 

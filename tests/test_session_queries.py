@@ -1,5 +1,4 @@
 import pytest
-
 from heim.auth.models import Session
 from heim.auth.queries import create_session, get_session, update_session
 

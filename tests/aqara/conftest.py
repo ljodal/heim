@@ -1,7 +1,6 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
-
 from heim.accounts.utils import get_random_string
 from heim.integrations.aqara.queries import create_aqara_account, create_aqara_sensor
 from heim.integrations.aqara.tasks import MODEL_TO_RESOURCE_MAPPING
@@ -14,7 +13,7 @@ async def aqara_account_id(connection: None, account_id: int, username: str) -> 
         username=username,
         access_token=get_random_string(10),
         refresh_token=get_random_string(10),
-        expires_at=datetime.now(timezone.utc) + timedelta(hours=1),
+        expires_at=datetime.now(UTC) + timedelta(hours=1),
     )
 
 

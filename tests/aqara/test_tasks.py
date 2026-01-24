@@ -1,8 +1,6 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
-from pytest_mock import MockerFixture
-
 from heim import db
 from heim.integrations.aqara.client import AqaraClient
 from heim.integrations.aqara.queries import get_aqara_sensor
@@ -11,6 +9,7 @@ from heim.integrations.aqara.types import (
     QueryResourceHistoryResult,
     ResourceHistoryPoint,
 )
+from pytest_mock import MockerFixture
 
 pytestmark = pytest.mark.asyncio
 
@@ -23,7 +22,7 @@ async def test_update_sensor_data(
     sensor_model: str,
     mocker: MockerFixture,
 ) -> None:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     scan_id = "test"
     return_values = [
         QueryResourceHistoryResult(

@@ -1,5 +1,4 @@
 import pytest
-
 from heim.accounts.queries import create_account, create_location
 
 pytestmark = pytest.mark.asyncio

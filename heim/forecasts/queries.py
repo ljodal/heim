@@ -153,7 +153,9 @@ async def get_instances(
 
     rows = await db.fetch(
         """
-        SELECT created_at, array_agg((measured_at, value) ORDER BY measured_at) as values
+        SELECT
+            created_at,
+            array_agg((measured_at, value) ORDER BY measured_at) as values
         FROM forecast_instance i JOIN forecast_value v ON v.forecast_instance_id = i.id
         WHERE id IN ($1, $2, $3) AND attribute = $4
         GROUP BY id

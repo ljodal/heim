@@ -1,8 +1,8 @@
 import os
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from importlib import import_module
 from pathlib import Path
-from typing import AsyncIterator
 
 import sentry_sdk
 from fastapi import FastAPI
@@ -63,4 +63,4 @@ async def get_health() -> dict[str, str]:
 
 @app.get("/sentry-debug")
 async def trigger_error() -> None:
-    1 / 0
+    1 / 0  # noqa

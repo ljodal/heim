@@ -8,7 +8,6 @@ from collections.abc import AsyncIterator, Iterator
 import asyncpg
 import httpx
 import pytest
-
 from heim import db
 from heim.accounts.queries import create_account, create_location
 from heim.auth.models import Session

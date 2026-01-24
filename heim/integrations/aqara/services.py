@@ -1,8 +1,8 @@
 import functools
 import inspect
 from collections.abc import Awaitable, Callable
-from datetime import datetime, timedelta, timezone
-from typing import Concatenate, ParamSpec, TypeVar, cast
+from datetime import UTC, datetime, timedelta
+from typing import Concatenate, cast
 
 import structlog
 
@@ -11,13 +11,10 @@ from .client import AqaraClient
 from .exceptions import ExpiredAccessToken
 from .queries import get_aqara_account, update_aqara_account
 
-P = ParamSpec("P")
-R = TypeVar("R")
-
 logger = structlog.get_logger()
 
 
-def with_aqara_client(
+def with_aqara_client[**P, R](
     func: Callable[Concatenate[AqaraClient, P], Awaitable[R]],
 ) -> Callable[P, Awaitable[R]]:
     """
@@ -68,7 +65,5 @@ async def refresh_access_token(client: AqaraClient, *, account_id: int) -> None:
                 account,
                 refresh_token=response.refresh_token,
                 access_token=response.access_token,
-                expires_at=(
-                    datetime.now(timezone.utc) + timedelta(seconds=response.expires_in)
-                ),
+                expires_at=(datetime.now(UTC) + timedelta(seconds=response.expires_in)),
             )

@@ -3,7 +3,6 @@ Basic tests to ensure that the database logic works.
 """
 
 import pytest
-
 from heim import db
 
 pytestmark = pytest.mark.asyncio

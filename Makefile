@@ -1,17 +1,15 @@
-all : black mypy isort flake8
+all: lint mypy
 
-.PHONY: black
-black:
-	black --check heim tests
+.PHONY: lint
+lint:
+	ruff check heim tests
+	ruff format --check heim tests
 
 .PHONY: mypy
 mypy:
 	mypy heim tests
 
-.PHONY: isort
-isort:
-	isort --check-only heim tests
-
-.PHONY: flake8
-flake8:
-	flake8 heim tests
+.PHONY: fix
+fix:
+	ruff check --fix heim tests
+	ruff format heim tests

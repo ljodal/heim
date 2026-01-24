@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from email.utils import parsedate_to_datetime
 
@@ -41,7 +41,7 @@ async def load_yr_forecast(
     # Figure out when to update again. If the Expires header was provided we
     # use that, if not we try again in 1 minute. Also ensure we never try more
     # than once a minute, regardless of the Expires header
-    next_update = datetime.now(timezone.utc) + timedelta(minutes=1)
+    next_update = datetime.now(UTC) + timedelta(minutes=1)
     if "Expires" in response.headers:
         next_update = max(
             next_update,

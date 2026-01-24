@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import click
 
@@ -58,7 +58,7 @@ async def create_account(
         access_token=result.access_token,
         refresh_token=result.refresh_token,
         username=aqara_account,
-        expires_at=datetime.now(timezone.utc) + timedelta(seconds=result.expires_in),
+        expires_at=datetime.now(UTC) + timedelta(seconds=result.expires_in),
     )
 
     click.echo("Account linked!")
@@ -163,7 +163,7 @@ async def backfill_sensor(
         click.echo("\nUse --sensor-id to backfill a specific sensor.")
         ctx.exit(1)
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     click.echo(f"Backfilling sensor {sensor_id}, {days} days back in 7-day windows...")
 
     for window_end_days in range(0, days, 7):

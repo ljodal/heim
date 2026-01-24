@@ -1,17 +1,14 @@
 from collections.abc import Awaitable, Callable, Generator
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Generic, ParamSpec, TypeVar
+from typing import Any
 from warnings import warn
 
 from .queries import create_scheduled_task, queue_task
 
-P = ParamSpec("P")
-R = TypeVar("R")
-
 
 @dataclass(kw_only=True)
-class BoundTask(Generic[R]):
+class BoundTask[R]:
     """A task with bound arguments, ready to be scheduled or deferred."""
 
     name: str
@@ -43,7 +40,7 @@ class BoundTask(Generic[R]):
 
 
 @dataclass(frozen=True, kw_only=True)
-class Task(Generic[P, R]):
+class Task[**P, R]:
     func: Callable[P, Awaitable[R]]
     name: str
     allow_skip: bool
@@ -65,7 +62,7 @@ def get_task(*, name: str) -> Task[Any, Any]:
     return _TASK_REGISTRY[name]
 
 
-def task(
+def task[**P, R](
     *, name: str, allow_skip: bool = False, atomic: bool = True, timeout: int = 10
 ) -> Callable[[Callable[P, Awaitable[R]]], Task[P, R]]:
     """

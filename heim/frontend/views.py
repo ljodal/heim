@@ -89,8 +89,8 @@ async def location_overview(
         current_location = next(
             location for location in locations if location.id == location_id
         )
-    except StopIteration:
-        raise HTTPException(status_code=404, detail="Unknown location")
+    except StopIteration as e:
+        raise HTTPException(status_code=404, detail="Unknown location") from e
 
     # Get sensor data for charts
     sensors = await get_sensors(location_id=location_id)

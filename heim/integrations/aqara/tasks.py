@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import structlog
 
@@ -62,7 +62,7 @@ async def update_sensor_data(
     # back, so we default to loading as far back as we can if we have no
     # previous data for the sensor.
     if from_time is None:
-        from_time = last_update_time or datetime.now(timezone.utc) - timedelta(days=7)
+        from_time = last_update_time or datetime.now(UTC) - timedelta(days=7)
 
     resource_mapping = MODEL_TO_RESOURCE_MAPPING[model]
 

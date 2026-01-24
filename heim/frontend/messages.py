@@ -4,13 +4,14 @@ A simple set of utils for storing messages in cookies.
 NOTE: Does not verify that the cookie has not been tampered with
 """
 
-from typing import Annotated, Awaitable, Callable, Literal, TypeAlias
+from collections.abc import Awaitable, Callable
+from typing import Annotated, Literal
 
 from fastapi import Depends, Request, Response
 from pydantic import BaseModel, TypeAdapter
 from starlette.middleware.base import BaseHTTPMiddleware
 
-Level: TypeAlias = Literal["notice", "warning", "error"]
+type Level = Literal["notice", "warning", "error"]
 CSS_CLASS_MAPPING = {
     "notice": "alert alert-info",
     "warning": "alert alert-warning",

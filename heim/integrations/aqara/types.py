@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Generic, Literal, NotRequired, TypedDict, TypeVar, Union
+from typing import Any, Literal, NotRequired, TypedDict
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -54,33 +54,31 @@ class FetchResourceHistoryData(TypedDict):
     size: NotRequired[int]
 
 
-Intent = Union[
-    Literal["config.auth.getAuthCode"],
-    Literal["config.auth.getToken"],
-    Literal["config.auth.refreshToken"],
-    Literal["query.device.info"],
-    Literal["query.resource.info"],
-    Literal["fetch.resource.history"],
+Intent = Literal[
+    "config.auth.getAuthCode",
+    "config.auth.getToken",
+    "config.auth.refreshToken",
+    "query.device.info",
+    "query.resource.info",
+    "fetch.resource.history",
 ]
 
-IntentData = Union[
-    GetAuthCodeData,
-    GetTokenData,
-    RefreshTokenData,
-    QueryDeviceInfoData,
-    QueryResourceInfoData,
-    FetchResourceHistoryData,
-]
+IntentData = (
+    GetAuthCodeData
+    | GetTokenData
+    | RefreshTokenData
+    | QueryDeviceInfoData
+    | QueryResourceInfoData
+    | FetchResourceHistoryData
+)
 
 
 ##################
 # Response types #
 ##################
 
-T = TypeVar("T")
 
-
-class BaseResponse(BaseModel, Generic[T]):
+class BaseResponse[T](BaseModel):
     code: int
     message: str
     msg_details: str | None = None

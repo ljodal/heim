@@ -139,7 +139,7 @@ class AqaraClient:
     # Context manager #
     ###################
 
-    async def __aenter__(self) -> "AqaraClient":
+    async def __aenter__(self) -> AqaraClient:
         if not self.client:
             self.client = httpx.AsyncClient()
         return self

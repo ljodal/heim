@@ -1,7 +1,6 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
-
 from heim.tasks import task
 from heim.tasks.queries import get_next_task
 
@@ -23,12 +22,12 @@ async def test_schedule_without_time_task(connection: None) -> None:
     assert task_id > 0
     assert name == "my-test-task"
     assert arguments == {"arg": 1}
-    assert run_at < datetime.now(timezone.utc)
+    assert run_at < datetime.now(UTC)
     assert from_schedule_id is None
 
 
 async def test_schedule_with_time_task(connection: None) -> None:
-    run_at = datetime.now(timezone.utc) + timedelta(days=1)
+    run_at = datetime.now(UTC) + timedelta(days=1)
     await my_test_task(arg=1).defer(run_at=run_at)
 
     task = await get_next_task()

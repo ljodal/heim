@@ -1,6 +1,5 @@
 import httpx
 import pytest
-
 from heim.auth.queries import get_session
 
 pytestmark = pytest.mark.asyncio
