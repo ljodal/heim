@@ -133,3 +133,33 @@ async def create_devices(
             arguments={"account_id": account_id, "sensor_id": sensor_id},
             cron_expression="*/5 * * * *",
         )
+
+
+@devices.command(name="backfill")
+@click.option("--sensor-id", type=int, help="Sensor ID to backfill", required=True)
+@click.option("--account-id", "-a", type=int, help="Account id", required=True)
+@click.option("--days", type=int, default=7, help="Number of days to backfill")
+@db.setup()
+async def backfill_sensor(*, account_id: int, sensor_id: int, days: int) -> None:
+    """
+    Backfill historical data for a sensor, ignoring any existing measurements.
+
+    Queries in 7-day windows due to Aqara API limits.
+    """
+    now = datetime.now(timezone.utc)
+    click.echo(f"Backfilling sensor {sensor_id}, {days} days back in 7-day windows...")
+
+    for window_end_days in range(0, days, 7):
+        window_start_days = min(window_end_days + 7, days)
+        from_time = now - timedelta(days=window_start_days)
+        to_time = now - timedelta(days=window_end_days)
+
+        click.echo(f"  {from_time.date()} to {to_time.date()}...")
+        await update_sensor_data(
+            account_id=account_id,
+            sensor_id=sensor_id,
+            from_time=from_time,
+            to_time=to_time,
+        )
+
+    click.echo("Done!")

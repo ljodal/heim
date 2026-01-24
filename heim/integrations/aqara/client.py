@@ -115,18 +115,24 @@ class AqaraClient:
         device_id: str,
         resource_ids: Iterable[str],
         from_time: datetime,
+        to_time: datetime | None = None,
         scan_id: str | None = None,
     ) -> QueryResourceHistoryResult:
         start_time = str(int(from_time.timestamp() * 1000))
 
+        data: dict[str, Any] = {
+            "subjectId": device_id,
+            "resourceIds": list(resource_ids),
+            "startTime": start_time,
+            "size": 300,
+            "scanId": scan_id,
+        }
+        if to_time:
+            data["endTime"] = str(int(to_time.timestamp() * 1000))
+
         return await self._request(
             intent="fetch.resource.history",
-            data={
-                "subjectId": device_id,
-                "resourceIds": list(resource_ids),
-                "startTime": start_time,
-                "scanId": scan_id,
-            },
+            data=data,
             response_type=BaseResponse[QueryResourceHistoryResult],
         )
 

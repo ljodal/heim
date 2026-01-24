@@ -88,6 +88,32 @@ async def get_forecast(*, account_id: int, location_id: int) -> int | None:
     return forecast_id
 
 
+async def get_latest_forecast_values(
+    *, location_id: int, attribute: Attribute
+) -> list[tuple[datetime, int]]:
+    """
+    Get the latest forecast values for a location.
+    """
+    rows = await db.fetch(
+        """
+        SELECT v.measured_at, v.value
+        FROM forecast f
+        JOIN forecast_instance i ON i.forecast_id = f.id
+        JOIN forecast_value v ON v.forecast_instance_id = i.id
+        WHERE f.location_id = $1
+          AND v.attribute = $2
+          AND i.created_at = (
+              SELECT MAX(created_at) FROM forecast_instance WHERE forecast_id = f.id
+          )
+          AND v.measured_at > now()
+        ORDER BY v.measured_at
+        """,
+        location_id,
+        attribute,
+    )
+    return [(row["measured_at"], row["value"]) for row in rows]
+
+
 async def get_instances(
     *, forecast_id: int, attribute: Attribute
 ) -> dict[datetime, tuple[datetime, int]]:

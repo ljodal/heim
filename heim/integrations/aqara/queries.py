@@ -131,12 +131,12 @@ async def get_aqara_sensor(
             sensor_type,
             (
                 SELECT MAX(measured_at)
-                FROM sensor_measurement
-                WHERE sensor_id=sensor_id
+                FROM sensor_measurement sm
+                WHERE sm.sensor_id = s.sensor_id
             )
         FROM aqara_sensor s
         JOIN aqara_account a ON s.aqara_account_id = a.id
-        WHERE a.account_id = $1 AND sensor_id = $2
+        WHERE a.account_id = $1 AND s.sensor_id = $2
         """,
         account_id,
         sensor_id,

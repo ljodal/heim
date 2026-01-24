@@ -6,6 +6,8 @@ class Attribute(str, enum.Enum):
     AIR_TEMPERATURE = "air temperature"
     AIR_TEMPERATURE_MAX = "air temperature max"
     AIR_TEMPERATURE_MIN = "air temperature min"
+    BATTERY_VOLTAGE = "battery voltage"
+    BATTERY_LOW = "battery low"
     CLOUD_COVER = "cloud cover"
     CLOUD_COVER_HIGH = "cloud cover high"
     CLOUD_COVER_LOW = "cloud cover low"

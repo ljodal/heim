@@ -1,4 +1,4 @@
-FROM python:3.12-alpine AS base
+FROM python:3.14-alpine AS base
 
 WORKDIR /app
 
@@ -9,7 +9,7 @@ COPY pyproject.toml poetry.lock /app/
 ENV PIP_DEFAULT_TIMEOUT=100 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PIP_NO_CACHE_DIR=1 \
-    POETRY_VERSION=1.6.1
+    POETRY_VERSION=2.3.1
 
 RUN apk add --no-cache gcc libffi-dev musl-dev openssl-dev
 RUN pip install "poetry==$POETRY_VERSION"

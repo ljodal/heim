@@ -33,7 +33,8 @@ class AsyncAwareContext(click.Context):
             return r
 
 
-click.BaseCommand.context_class = AsyncAwareContext
+click.Command.context_class = AsyncAwareContext
+click.Group.context_class = AsyncAwareContext
 
 
 @click.group()

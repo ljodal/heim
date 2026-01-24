@@ -5,6 +5,9 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from ..accounts.queries import get_account, get_locations
+from ..forecasts.queries import get_latest_forecast_values
+from ..sensors.queries import get_sensors, get_measurements
+from ..sensors.types import Attribute
 from ..accounts.utils import compare_password, hash_password
 from ..auth.dependencies import CookieSession
 from ..auth.queries import create_session, delete_session
@@ -88,9 +91,37 @@ async def location_overview(
         )
     except StopIteration:
         raise HTTPException(status_code=404, detail="Unknown location")
+
+    # Get sensor data for charts
+    sensors = await get_sensors(location_id=location_id)
+    sensor_data = []
+    for sensor_id, sensor_name in sensors:
+        measurements = await get_measurements(
+            sensor_id=sensor_id, attribute=Attribute.AIR_TEMPERATURE, hours=168
+        )
+        if measurements:
+            sensor_data.append({
+                "name": sensor_name or f"Sensor {sensor_id}",
+                "labels": [m[0].isoformat() for m in measurements],
+                "values": [m[1] / 100 for m in measurements],
+            })
+
+    # Get forecast data
+    forecast_values = await get_latest_forecast_values(
+        location_id=location_id, attribute=Attribute.AIR_TEMPERATURE
+    )
+    forecast_data = None
+    if forecast_values:
+        forecast_data = {
+            "labels": [v[0].isoformat() for v in forecast_values],
+            "values": [v[1] / 100 for v in forecast_values],
+        }
+
     context = {
         "request": request,
         "locations": locations,
         "current_location": current_location,
+        "sensor_data": sensor_data,
+        "forecast_data": forecast_data,
     }
     return templates.TemplateResponse("index.html", context)
