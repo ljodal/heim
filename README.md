@@ -32,6 +32,10 @@ You need Python 3.10+ and PostgreSQL 12+ to run this project.
     export AQARA_KEY_ID=...
     export AQARA_DOMAIN=open-ger.aqara.com
 
+    # Set up netatmo integration
+    export NETATMO_CLIENT_ID=...
+    export NETATMO_CLIENT_SECRET=...
+
     # Specify which database to use
     export PGDATABASE=heim
     ```
@@ -62,4 +66,74 @@ In addition to the HTTP component, heim also has a background task runner that h
 
 ```bash
 ./bin/run-tasks
+```
+
+## Integrations
+
+### Netatmo Weather Station
+
+Heim supports Netatmo weather stations (indoor/outdoor sensors, rain gauge, etc.).
+
+#### Setup
+
+1. **Create a Netatmo app** at [dev.netatmo.com](https://dev.netatmo.com/apps/createanapp)
+   - You'll need a Netatmo account with at least one weather station
+   - Note down the `client_id` and `client_secret`
+
+2. **Set environment variables**:
+
+    ```bash
+    export NETATMO_CLIENT_ID=your_client_id
+    export NETATMO_CLIENT_SECRET=your_client_secret
+    ```
+
+3. **Get the authorization URL**:
+
+    ```bash
+    heim netatmo accounts auth-url
+    ```
+
+    Visit the URL in your browser and authorize the app. You'll be redirected to a URL containing a `code` parameter.
+
+4. **Link your Netatmo account**:
+
+    ```bash
+    heim netatmo accounts create --account-id 1 --auth-code <code>
+    ```
+
+5. **List your devices** to find the module IDs:
+
+    ```bash
+    heim netatmo devices list -a 1
+    ```
+
+6. **Register sensors** for data collection:
+
+    ```bash
+    heim netatmo devices create --name "Living Room" --netatmo-id <module_id> --location-id 1 -a 1
+    ```
+
+    This will create a sensor and schedule automatic data collection every 10 minutes.
+
+#### Supported modules
+
+| Module Type | Description | Data Collected |
+|-------------|-------------|----------------|
+| NAMain | Indoor base station | Temperature, Humidity, CO2, Noise, Pressure |
+| NAModule1 | Outdoor module | Temperature, Humidity |
+| NAModule3 | Rain gauge | Precipitation |
+| NAModule4 | Additional indoor | Temperature, Humidity, CO2 |
+
+#### CLI Commands
+
+```bash
+# Account management
+heim netatmo accounts auth-url          # Get OAuth authorization URL
+heim netatmo accounts create            # Link a Netatmo account
+
+# Device management
+heim netatmo devices list -a <id>       # List all stations and modules
+heim netatmo devices create             # Register a module as a sensor
+heim netatmo devices sensors -a <id>    # List registered sensors
+heim netatmo devices backfill -a <id>   # Backfill historical data
 ```
