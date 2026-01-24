@@ -1,8 +1,11 @@
+import logging
 import os
 from datetime import UTC, datetime
 from typing import Any
 
 import httpx
+
+logger = logging.getLogger(__name__)
 
 from .exceptions import (
     ExpiredAccessToken,
@@ -68,17 +71,25 @@ class NetatmoClient:
         if not self.client:
             self.client = httpx.AsyncClient()
 
-        response = await self.client.post(
-            AUTH_URL,
-            data={
-                "client_id": self.client_id,
-                "client_secret": self.client_secret,
-                **data,
-            },
+        request_data = {
+            "client_id": self.client_id,
+            "client_secret": self.client_secret,
+            **data,
+        }
+
+        # Debug: log client_id prefix to verify it's being read
+        logger.info(
+            f"Token request with client_id starting with: {self.client_id[:8]}..."
         )
 
-        if response.status_code == 400:
-            error_data = response.json()
+        response = await self.client.post(AUTH_URL, data=request_data)
+
+        if response.status_code >= 400:
+            try:
+                error_data = response.json()
+            except Exception:
+                error_data = {"raw": response.text}
+            logger.error(f"Token request failed: {response.status_code} - {error_data}")
             error = error_data.get("error", "")
             error_description = error_data.get("error_description", "")
             if error == "invalid_grant":
@@ -92,11 +103,16 @@ class NetatmoClient:
                         f"Authorization code is invalid, expired, or already used: "
                         f"{error_description}"
                     )
+            if error == "invalid_client":
+                raise NetatmoAPIError(
+                    f"Invalid client credentials. Please verify NETATMO_CLIENT_ID "
+                    f"and NETATMO_CLIENT_SECRET are correct. "
+                    f"Client ID starts with: {self.client_id[:8]}..."
+                )
             raise NetatmoAPIError(
                 f"Token request failed: {error} - {error_description}"
             )
 
-        response.raise_for_status()
         return TokenResponse.model_validate(response.json())
 
     ################
