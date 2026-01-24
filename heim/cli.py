@@ -10,14 +10,15 @@ import click
 import sentry_sdk
 from sentry_sdk.integrations.asyncpg import AsyncPGIntegration
 
-sentry_sdk.init(
-    traces_sample_rate=1.0,
-    profiles_sample_rate=1.0,
-    integrations=[
-        AsyncPGIntegration(),
-    ],
-    debug="DEBUG" in os.environ,
-)
+if os.environ.get("SENTRY_DSN"):
+    sentry_sdk.init(
+        traces_sample_rate=1.0,
+        profiles_sample_rate=1.0,
+        integrations=[
+            AsyncPGIntegration(),
+        ],
+        debug="DEBUG" in os.environ,
+    )
 
 
 class AsyncAwareContext(click.Context):

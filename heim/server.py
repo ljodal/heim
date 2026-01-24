@@ -11,14 +11,15 @@ from sentry_sdk.integrations.asyncpg import AsyncPGIntegration
 
 from . import db
 
-sentry_sdk.init(
-    traces_sample_rate=1.0,
-    profiles_sample_rate=1.0,
-    integrations=[
-        AsyncPGIntegration(),
-    ],
-    debug="DEBUG" in os.environ,
-)
+if "SENTRY_DSN" in os.environ:
+    sentry_sdk.init(
+        traces_sample_rate=1.0,
+        profiles_sample_rate=1.0,
+        integrations=[
+            AsyncPGIntegration(),
+        ],
+        debug="DEBUG" in os.environ,
+    )
 
 
 @asynccontextmanager
