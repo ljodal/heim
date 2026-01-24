@@ -79,6 +79,7 @@ Heim supports Netatmo weather stations (indoor/outdoor sensors, rain gauge, etc.
 1. **Create a Netatmo app** at [dev.netatmo.com](https://dev.netatmo.com/apps/createanapp)
    - You'll need a Netatmo account with at least one weather station
    - Note down the `client_id` and `client_secret`
+   - Add `http://localhost:8000/api/netatmo/callback` as a redirect URI
 
 2. **Set environment variables**:
 
@@ -87,15 +88,21 @@ Heim supports Netatmo weather stations (indoor/outdoor sensors, rain gauge, etc.
     export NETATMO_CLIENT_SECRET=your_client_secret
     ```
 
-3. **Get the authorization URL**:
+3. **Make sure the heim server is running**:
 
     ```bash
-    heim netatmo accounts auth-url
+    uvicorn heim.server:app
     ```
 
-    Visit the URL in your browser and authorize the app. You'll be redirected to a URL containing a `code` parameter.
+4. **Authorize with Netatmo** (opens browser):
 
-4. **Link your Netatmo account**:
+    ```bash
+    heim netatmo accounts auth
+    ```
+
+    After authorization, you'll be redirected to heim which displays the command to run.
+
+5. **Link your Netatmo account** using the command shown:
 
     ```bash
     heim netatmo accounts create --account-id 1 --auth-code <code>
@@ -128,7 +135,7 @@ Heim supports Netatmo weather stations (indoor/outdoor sensors, rain gauge, etc.
 
 ```bash
 # Account management
-heim netatmo accounts auth-url          # Get OAuth authorization URL
+heim netatmo accounts auth              # Open browser to authorize with Netatmo
 heim netatmo accounts create            # Link a Netatmo account
 
 # Device management

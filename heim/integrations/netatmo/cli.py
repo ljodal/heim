@@ -1,4 +1,5 @@
 import os
+import webbrowser
 from datetime import UTC, datetime, timedelta
 from urllib.parse import urlencode
 
@@ -13,6 +14,11 @@ from .tasks import update_sensor_data
 # OAuth URLs
 AUTH_BASE_URL = "https://api.netatmo.com/oauth2/authorize"
 SCOPES = ["read_station"]
+
+
+def get_redirect_uri() -> str:
+    """Get the redirect URI, defaulting to the heim server callback."""
+    return os.getenv("NETATMO_REDIRECT_URI", "http://localhost:8000/api/netatmo/callback")
 
 
 @click.group(name="netatmo", help="Manage Netatmo weather stations")
@@ -30,19 +36,20 @@ def accounts() -> None:
     pass
 
 
-@accounts.command(name="auth-url", help="Get the OAuth authorization URL")
-def get_auth_url() -> None:
+@accounts.command(name="auth", help="Open browser to authorize with Netatmo")
+def auth() -> None:
     """
-    Generate the OAuth authorization URL. Visit this URL in a browser,
-    authorize the app, and you'll be redirected to your redirect URI with
-    an authorization code.
+    Open a browser to authorize with Netatmo.
+
+    After authorization, you'll be redirected to the heim server which will
+    display the command to run to complete the linking.
     """
     client_id = os.getenv("NETATMO_CLIENT_ID")
     if not client_id:
         click.echo("Error: NETATMO_CLIENT_ID environment variable not set")
         raise SystemExit(1)
 
-    redirect_uri = os.getenv("NETATMO_REDIRECT_URI", "http://localhost:8000/callback")
+    redirect_uri = get_redirect_uri()
 
     params = {
         "client_id": client_id,
@@ -51,24 +58,26 @@ def get_auth_url() -> None:
         "state": "heim",
     }
 
-    url = f"{AUTH_BASE_URL}?{urlencode(params)}"
-    click.echo("Visit this URL to authorize the application:\n")
-    click.echo(url)
-    click.echo("\nAfter authorization, you'll be redirected to your redirect URI.")
-    click.echo("Copy the 'code' parameter from the URL and use it with:")
-    click.echo("  heim netatmo accounts create --account-id <id> --auth-code <code>")
+    auth_url = f"{AUTH_BASE_URL}?{urlencode(params)}"
+
+    click.echo("Opening browser for Netatmo authorization...")
+    click.echo(f"\nIf the browser doesn't open, visit:\n{auth_url}\n")
+    click.echo("Make sure the heim server is running (uvicorn heim.server:app)")
+    webbrowser.open(auth_url)
 
 
 @accounts.command(name="create", help="Link a Netatmo account to a Heim account")
 @click.option("--account-id", type=int, help="Heim account ID", required=True)
 @click.option("--auth-code", help="Auth code from OAuth redirect", required=True)
-@click.option(
-    "--redirect-uri",
-    help="Redirect URI used during authorization",
-    default="http://localhost:8000/callback",
-)
 @db.setup()
-async def create_account(*, account_id: int, auth_code: str, redirect_uri: str) -> None:
+async def create_account(*, account_id: int, auth_code: str) -> None:
+    """
+    Link a Netatmo account using an authorization code.
+
+    Run 'heim netatmo accounts auth' first to get the authorization code.
+    """
+    redirect_uri = get_redirect_uri()
+
     async with NetatmoClient() as client:
         result = await client.get_token_from_code(
             code=auth_code, redirect_uri=redirect_uri

@@ -1,0 +1,45 @@
+{% extends "layout.html" %}
+
+{% block body %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            {% if error %}
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">Authorization Failed</h4>
+                </div>
+                <div class="card-body">
+                    <p><strong>Error:</strong> {{ error }}</p>
+                    {% if error_description %}
+                    <p class="text-muted">{{ error_description }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% elif code %}
+            <div class="card border-success">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">Authorization Successful!</h4>
+                </div>
+                <div class="card-body">
+                    <p>Copy this command to link your Netatmo account:</p>
+                    <pre class="bg-dark text-light p-3 rounded"><code>heim netatmo accounts create --account-id 1 --auth-code {{ code }}</code></pre>
+                    <p class="text-muted small">
+                        Replace <code>1</code> with your actual Heim account ID.
+                    </p>
+                </div>
+            </div>
+            {% else %}
+            <div class="card border-warning">
+                <div class="card-header bg-warning">
+                    <h4 class="mb-0">Missing Authorization Code</h4>
+                </div>
+                <div class="card-body">
+                    <p>No authorization code was provided.</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
