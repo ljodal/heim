@@ -29,7 +29,16 @@
 
   <main class="container">
     <div class="row">
-      {% if forecast_data %}
+      {% if outdoor_hub_data %}
+      <div class="col-12 mt-4">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Outdoor</h5>
+            <canvas id="outdoor-hub-chart"></canvas>
+          </div>
+        </div>
+      </div>
+      {% elif forecast_data %}
       <div class="col-12 mt-4">
         <div class="card">
           <div class="card-body">
@@ -58,9 +67,215 @@
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
   <script>
+    // Temperature thresholds and colors for gradient
+    // Hard stop at zero: blue below, orange-to-red above
+    const tempColorStops = [
+      { temp: -20, r: 30, g: 80, b: 180 },    // Dark blue
+      { temp: -0.01, r: 70, g: 130, b: 220 }, // Blue (just below zero)
+      { temp: 0, r: 230, g: 140, b: 50 },     // Orange (at zero)
+      { temp: 20, r: 220, g: 60, b: 60 },     // Red
+    ];
+
+    // Get interpolated color for a temperature
+    function getColorForTemp(temp, opacity = 1) {
+      // Clamp to range
+      if (temp <= tempColorStops[0].temp) {
+        const s = tempColorStops[0];
+        return `rgba(${s.r}, ${s.g}, ${s.b}, ${opacity})`;
+      }
+      if (temp >= tempColorStops[tempColorStops.length - 1].temp) {
+        const s = tempColorStops[tempColorStops.length - 1];
+        return `rgba(${s.r}, ${s.g}, ${s.b}, ${opacity})`;
+      }
+
+      // Find the two stops to interpolate between
+      for (let i = 0; i < tempColorStops.length - 1; i++) {
+        const low = tempColorStops[i];
+        const high = tempColorStops[i + 1];
+        if (temp >= low.temp && temp <= high.temp) {
+          const t = (temp - low.temp) / (high.temp - low.temp);
+          const r = Math.round(low.r + t * (high.r - low.r));
+          const g = Math.round(low.g + t * (high.g - low.g));
+          const b = Math.round(low.b + t * (high.b - low.b));
+          return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+        }
+      }
+      return `rgba(100, 100, 100, ${opacity})`;
+    }
+
+    // Cache for gradients
+    const gradientCache = new Map();
+
+    // Create a vertical gradient based on y-axis temperature values
+    function getTemperatureGradient(context, opacity = 1) {
+      const chart = context.chart;
+      const { ctx, chartArea, scales } = chart;
+
+      if (!chartArea) {
+        return null;
+      }
+
+      const yScale = scales.y;
+      const cacheKey = `${chartArea.bottom}-${chartArea.top}-${yScale.min}-${yScale.max}-${opacity}`;
+
+      if (!gradientCache.has(cacheKey)) {
+        // Gradient from bottom (low temp) to top (high temp)
+        const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+
+        // Add color stops based on temperature positions
+        const steps = 10;
+        for (let i = 0; i <= steps; i++) {
+          const pos = i / steps;
+          const temp = yScale.min + pos * (yScale.max - yScale.min);
+          gradient.addColorStop(pos, getColorForTemp(temp, opacity));
+        }
+
+        gradientCache.set(cacheKey, gradient);
+      }
+
+      return gradientCache.get(cacheKey);
+    }
+
+    const outdoorHubData = {{ outdoor_hub_data | tojson }};
+    if (outdoorHubData) {
+      const ctx = document.getElementById('outdoor-hub-chart');
+      const nowTime = new Date(outdoorHubData.now);
+
+      // Build datasets
+      const datasets = [];
+
+      // Measurement line (solid, temperature-colored)
+      if (outdoorHubData.measurements.labels.length > 0) {
+        datasets.push({
+          label: 'Measured',
+          data: outdoorHubData.measurements.labels.map((l, i) => ({
+            x: new Date(l),
+            y: outdoorHubData.measurements.values[i]
+          })),
+          borderColor: (context) => getTemperatureGradient(context, 1),
+          tension: 0.1,
+          fill: false,
+          pointRadius: 0,
+          borderWidth: 2,
+        });
+      }
+
+      // Forecast lines (dashed, temperature-colored with decreasing opacity)
+      const forecastOpacities = [1.0, 0.6, 0.3];
+      outdoorHubData.forecasts.forEach((forecast, index) => {
+        const opacity = forecastOpacities[index] || 0.3;
+        datasets.push({
+          label: `Forecast (${Math.round(forecast.age_hours)}h ago)`,
+          data: forecast.labels.map((l, i) => ({
+            x: new Date(l),
+            y: forecast.values[i]
+          })),
+          borderColor: (context) => getTemperatureGradient(context, opacity),
+          borderDash: [5, 5],
+          tension: 0.1,
+          fill: false,
+          pointRadius: 0,
+          borderWidth: 1.5,
+        });
+      });
+
+      new Chart(ctx, {
+        type: 'line',
+        data: { datasets },
+        options: {
+          responsive: true,
+          interaction: {
+            intersect: false,
+            mode: 'nearest',
+            axis: 'x',
+          },
+          plugins: {
+            annotation: {
+              annotations: {
+                nowLine: {
+                  type: 'line',
+                  xMin: nowTime,
+                  xMax: nowTime,
+                  borderColor: 'rgba(255, 255, 255, 0.7)',
+                  borderWidth: 2,
+                  borderDash: [6, 4],
+                },
+                zeroLine: {
+                  type: 'line',
+                  yMin: 0,
+                  yMax: 0,
+                  borderColor: 'rgba(150, 150, 255, 0.4)',
+                  borderWidth: 1,
+                  borderDash: [4, 4],
+                }
+              }
+            },
+            legend: {
+              display: false
+            }
+          },
+          scales: {
+            x: {
+              type: 'time',
+              time: {
+                unit: 'day',
+              },
+              ticks: {
+                display: false,
+              },
+            },
+            xLabels: {
+              type: 'time',
+              position: 'bottom',
+              time: {
+                unit: 'day',
+                displayFormats: {
+                  day: 'EEE'
+                }
+              },
+              ticks: {
+                maxRotation: 0,
+              },
+              grid: {
+                display: false,
+              },
+              afterDataLimits: function(axis) {
+                axis.min = axis.chart.scales.x.min;
+                axis.max = axis.chart.scales.x.max;
+              },
+              afterBuildTicks: function(axis) {
+                const halfDay = 12 * 60 * 60 * 1000;
+                const oneDay = 24 * 60 * 60 * 1000;
+
+                const firstDayMidnight = Math.floor(axis.min / oneDay) * oneDay;
+                if (!axis.ticks.some(t => t.value === firstDayMidnight)) {
+                  axis.ticks.unshift({ value: firstDayMidnight });
+                }
+
+                axis.ticks = axis.ticks
+                  .map(tick => ({
+                    ...tick,
+                    value: tick.value + halfDay
+                  }))
+                  .filter(tick => tick.value <= axis.max);
+              }
+            },
+            y: {
+              beginAtZero: false,
+              title: {
+                display: true,
+                text: '°C'
+              }
+            }
+          }
+        }
+      });
+    }
+
     const forecastData = {{ forecast_data | tojson }};
-    if (forecastData) {
+    if (forecastData && !outdoorHubData) {
       const ctx = document.getElementById('forecast-chart');
       new Chart(ctx, {
         type: 'line',

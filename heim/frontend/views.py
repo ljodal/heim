@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Form, HTTPException, Path, Request, Response, status
@@ -8,8 +9,8 @@ from ..accounts.queries import get_account, get_locations
 from ..accounts.utils import compare_password, hash_password
 from ..auth.dependencies import CookieSession
 from ..auth.queries import create_session, delete_session
-from ..forecasts.queries import get_latest_forecast_values
-from ..sensors.queries import get_measurements, get_sensors
+from ..forecasts.queries import get_forecast, get_instances, get_latest_forecast_values
+from ..sensors.queries import get_measurements, get_outdoor_sensors, get_sensors
 from ..sensors.types import Attribute
 from .dependencies import CurrentAccount
 from .messages import Messages, get_messages
@@ -93,7 +94,7 @@ async def location_overview(
         raise HTTPException(status_code=404, detail="Unknown location") from e
 
     # Get sensor data for charts
-    sensors = await get_sensors(location_id=location_id)
+    sensors = await get_sensors(account_id=account_id, location_id=location_id)
     sensor_data = []
     for sensor_id, sensor_name in sensors:
         measurements = await get_measurements(
@@ -119,11 +120,61 @@ async def location_overview(
             "values": [v[1] / 100 for v in forecast_values],
         }
 
+    # Build outdoor hub data
+    outdoor_hub_data = None
+    outdoor_sensors = await get_outdoor_sensors(
+        account_id=account_id, location_id=location_id
+    )
+    if outdoor_sensors:
+        now = datetime.now(UTC)
+
+        # Collect measurements from all outdoor sensors (24h)
+        all_measurements: list[tuple[datetime, float]] = []
+        for sensor_id, _ in outdoor_sensors:
+            measurements = await get_measurements(
+                sensor_id=sensor_id, attribute=Attribute.AIR_TEMPERATURE, hours=24
+            )
+            all_measurements.extend(measurements)
+
+        # Sort by time and convert values
+        all_measurements.sort(key=lambda m: m[0])
+
+        # Get forecast instances
+        forecast_id = await get_forecast(account_id=account_id, location_id=location_id)
+        forecasts: list[dict[str, Any]] = []
+        if forecast_id:
+            instances = await get_instances(
+                forecast_id=forecast_id, attribute=Attribute.AIR_TEMPERATURE
+            )
+            for created_at, values in instances.items():
+                age_hours = (now - created_at).total_seconds() / 3600
+                # Filter to future values only
+                future_values = [(ts, val) for ts, val in values if ts > now]
+                if future_values:
+                    forecasts.append(
+                        {
+                            "created_at": created_at.isoformat(),
+                            "age_hours": age_hours,
+                            "labels": [v[0].isoformat() for v in future_values],
+                            "values": [v[1] / 100 for v in future_values],
+                        }
+                    )
+
+        outdoor_hub_data = {
+            "measurements": {
+                "labels": [m[0].isoformat() for m in all_measurements],
+                "values": [m[1] / 100 for m in all_measurements],
+            },
+            "forecasts": forecasts,
+            "now": now.isoformat(),
+        }
+
     context = {
         "request": request,
         "locations": locations,
         "current_location": current_location,
         "sensor_data": sensor_data,
         "forecast_data": forecast_data,
+        "outdoor_hub_data": outdoor_hub_data,
     }
     return templates.TemplateResponse("index.html", context)

@@ -5,7 +5,9 @@ from .. import db
 from .types import Attribute
 
 
-async def get_sensors(*, location_id: int) -> list[tuple[int, str | None]]:
+async def get_sensors(
+    *, account_id: int, location_id: int
+) -> list[tuple[int, str | None]]:
     """
     Get all sensors for a location. Returns list of (id, name) tuples.
     """
@@ -13,9 +15,10 @@ async def get_sensors(*, location_id: int) -> list[tuple[int, str | None]]:
         """
         SELECT id, name
         FROM sensor
-        WHERE location_id = $1
+        WHERE location_id = $1 AND account_id = $2
         """,
         location_id,
+        account_id,
     )
     return [(row["id"], row["name"]) for row in rows]
 
@@ -60,3 +63,36 @@ async def save_measurements(
             for attribute, timestamp, value in values
         ],
     )
+
+
+async def get_outdoor_sensors(
+    *, account_id: int, location_id: int
+) -> list[tuple[int, str | None]]:
+    """Get all outdoor sensors for a location."""
+    rows = await db.fetch(
+        """
+        SELECT id, name
+        FROM sensor
+        WHERE location_id = $1 AND account_id = $2 AND is_outdoor = true
+        """,
+        location_id,
+        account_id,
+    )
+    return [(row["id"], row["name"]) for row in rows]
+
+
+async def set_outdoor_sensor(
+    *, account_id: int, sensor_id: int, is_outdoor: bool
+) -> bool:
+    """Set or clear the outdoor flag for a sensor. Returns True if sensor exists."""
+    result = await db.execute(
+        """
+        UPDATE sensor
+        SET is_outdoor = $2
+        WHERE id = $1 AND account_id = $3
+        """,
+        sensor_id,
+        is_outdoor,
+        account_id,
+    )
+    return result == "UPDATE 1"
