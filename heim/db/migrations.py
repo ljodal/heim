@@ -24,14 +24,12 @@ async def migrate_db() -> None:
 
 
 async def create_migrations_table(*, con: asyncpg.Connection[asyncpg.Record]) -> None:
-    await con.execute(
-        """
+    await con.execute("""
         create table if not exists migrations (
             name varchar primary key,
             applied_at timestamp with time zone not null
         );
-        """
-    )
+        """)
 
 
 async def get_applied_migrations(

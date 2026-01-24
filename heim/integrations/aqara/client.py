@@ -15,6 +15,7 @@ from .types import (
     AuthCodeResult,
     BaseResponse,
     DeviceInfo,
+    FetchResourceHistoryData,
     Intent,
     IntentData,
     QueryDeviceInfoResult,
@@ -118,12 +119,10 @@ class AqaraClient:
         to_time: datetime | None = None,
         scan_id: str | None = None,
     ) -> QueryResourceHistoryResult:
-        start_time = str(int(from_time.timestamp() * 1000))
-
-        data: dict[str, Any] = {
+        data: FetchResourceHistoryData = {
             "subjectId": device_id,
             "resourceIds": list(resource_ids),
-            "startTime": start_time,
+            "startTime": str(int(from_time.timestamp() * 1000)),
             "size": 300,
             "scanId": scan_id,
         }

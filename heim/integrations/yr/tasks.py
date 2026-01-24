@@ -77,7 +77,6 @@ async def load_yr_forecast(
     if_modified_since = response.headers.get("Last-Modified", None)
 
     # Schedule the task to run again when yr says it's okay.
-    await load_yr_forecast.defer(
-        arguments={"forecast_id": forecast_id, "if_modified_since": if_modified_since},
-        run_at=next_update,
-    )
+    await load_yr_forecast(
+        forecast_id=forecast_id, if_modified_since=if_modified_since
+    ).defer(run_at=next_update)

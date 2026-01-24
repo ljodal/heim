@@ -1,12 +1,45 @@
-from collections.abc import Awaitable, Callable
-from dataclasses import dataclass
+from collections.abc import Awaitable, Callable, Generator
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Generic, ParamSpec, TypeVar
+from warnings import warn
 
 from .queries import create_scheduled_task, queue_task
 
 P = ParamSpec("P")
 R = TypeVar("R")
+
+
+@dataclass(kw_only=True)
+class BoundTask(Generic[R]):
+    """A task with bound arguments, ready to be scheduled or deferred."""
+
+    name: str
+    arguments: dict[str, Any]
+    func: Callable[..., Awaitable[R]]
+    _consumed: bool = field(default=False, repr=False)
+
+    def __del__(self) -> None:
+        if not self._consumed:
+            warn(
+                f"PreparedTask '{self.name}' was never awaited or scheduled",
+                RuntimeWarning,
+                stacklevel=2,
+            )
+
+    def __await__(self) -> Generator[Any, None, R]:
+        self._consumed = True
+        return self.func(**self.arguments).__await__()
+
+    async def defer(self, *, run_at: datetime | None = None) -> int:
+        self._consumed = True
+        return await queue_task(name=self.name, arguments=self.arguments, run_at=run_at)
+
+    async def schedule(self, *, cron_expression: str) -> int:
+        self._consumed = True
+        return await create_scheduled_task(
+            name=self.name, arguments=self.arguments, cron_expression=cron_expression
+        )
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -17,18 +50,8 @@ class Task(Generic[P, R]):
     atomic: bool
     timeout: int
 
-    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> Awaitable[R]:
-        return self.func(*args, **kwargs)
-
-    async def defer(
-        self, *, arguments: P.kwargs, run_at: datetime | None = None
-    ) -> int:
-        return await queue_task(name=self.name, arguments=arguments, run_at=run_at)
-
-    async def schedule(self, *, arguments: P.kwargs, cron_expression: str) -> int:
-        return await create_scheduled_task(
-            name=self.name, arguments=arguments, cron_expression=cron_expression
-        )
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> BoundTask[R]:
+        return BoundTask(name=self.name, arguments=kwargs, func=self.func)
 
 
 _TASK_REGISTRY: dict[str, Task[Any, Any]] = {}

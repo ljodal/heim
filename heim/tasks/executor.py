@@ -2,7 +2,7 @@ import asyncio
 from datetime import datetime, timezone
 from importlib import import_module
 from pathlib import Path
-from typing import ParamSpec, TypeVar
+from typing import Any, TypeVar
 
 import sentry_sdk
 import structlog
@@ -19,7 +19,6 @@ from .queries import (
 
 logger = structlog.get_logger()
 
-P = ParamSpec("P")
 R = TypeVar("R")
 
 
@@ -100,9 +99,9 @@ async def run_next_task() -> bool:
 
 async def execute_task(
     *,
-    task: Task[P, R],
+    task: Task[..., R],
     task_id: int,
-    arguments: P.kwargs,
+    arguments: dict[str, Any],
     run_at: datetime,
     from_schedule_id: int | None,
     atomic: bool,

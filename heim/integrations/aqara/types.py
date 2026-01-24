@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Generic, Literal, TypedDict, TypeVar, Union
+from typing import Any, Generic, Literal, NotRequired, TypedDict, TypeVar, Union
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -50,6 +50,8 @@ class FetchResourceHistoryData(TypedDict):
     resourceIds: list[str]
     startTime: str
     scanId: str | None
+    endTime: NotRequired[str]
+    size: NotRequired[int]
 
 
 Intent = Union[

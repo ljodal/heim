@@ -129,9 +129,8 @@ async def create_devices(
             aqara_id=aqara_id,
         )
 
-        await update_sensor_data.schedule(
-            arguments={"account_id": account_id, "sensor_id": sensor_id},
-            cron_expression="*/5 * * * *",
+        await update_sensor_data(account_id=account_id, sensor_id=sensor_id).schedule(
+            cron_expression="*/5 * * * *"
         )
 
 

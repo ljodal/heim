@@ -116,9 +116,7 @@ async def create_aqara_sensor(
     return sensor_id
 
 
-async def get_aqara_sensors(
-    *, account_id: int
-) -> list[tuple[int, str, str]]:
+async def get_aqara_sensors(*, account_id: int) -> list[tuple[int, str, str]]:
     """
     Get all aqara sensors for an account. Returns list of (sensor_id, name, model).
     """

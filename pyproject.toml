@@ -6,7 +6,7 @@ authors = ["Sigurd Ljødal <sigurd@ljodal.no>"]
 license = "MIT"
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = "^3.14"
 httpx = "^0.28"
 asyncpg = "^0.31"
 pydantic = "^2"
@@ -60,7 +60,7 @@ profile = "black"
 src_paths= ["heim", "test"]
 
 [tool.mypy]
-python_version = "3.12"
+python_version = "3.14"
 files = ["heim", "tests"]
 plugins = ["pydantic.mypy"]
 strict = true

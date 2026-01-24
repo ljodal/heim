@@ -5,12 +5,12 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from ..accounts.queries import get_account, get_locations
-from ..forecasts.queries import get_latest_forecast_values
-from ..sensors.queries import get_sensors, get_measurements
-from ..sensors.types import Attribute
 from ..accounts.utils import compare_password, hash_password
 from ..auth.dependencies import CookieSession
 from ..auth.queries import create_session, delete_session
+from ..forecasts.queries import get_latest_forecast_values
+from ..sensors.queries import get_measurements, get_sensors
+from ..sensors.types import Attribute
 from .dependencies import CurrentAccount
 from .messages import Messages, get_messages
 
@@ -100,11 +100,13 @@ async def location_overview(
             sensor_id=sensor_id, attribute=Attribute.AIR_TEMPERATURE, hours=168
         )
         if measurements:
-            sensor_data.append({
-                "name": sensor_name or f"Sensor {sensor_id}",
-                "labels": [m[0].isoformat() for m in measurements],
-                "values": [m[1] / 100 for m in measurements],
-            })
+            sensor_data.append(
+                {
+                    "name": sensor_name or f"Sensor {sensor_id}",
+                    "labels": [m[0].isoformat() for m in measurements],
+                    "values": [m[1] / 100 for m in measurements],
+                }
+            )
 
     # Get forecast data
     forecast_values = await get_latest_forecast_values(

@@ -151,14 +151,27 @@ async def session(connection: None, account_id: int) -> Session:
 
 
 @pytest.fixture
-async def client() -> AsyncIterator[httpx.AsyncClient]:
-    async with httpx.AsyncClient(app=app, base_url="http://test") as c:
+def httpx_transport() -> httpx.ASGITransport:
+    return httpx.ASGITransport(app=app)
+
+
+@pytest.fixture
+async def client(
+    httpx_transport: httpx.ASGITransport,
+) -> AsyncIterator[httpx.AsyncClient]:
+    async with httpx.AsyncClient(
+        transport=httpx_transport, base_url="http://test"
+    ) as c:
         yield c
 
 
 @pytest.fixture
-async def authenticated_client(session: Session) -> AsyncIterator[httpx.AsyncClient]:
+async def authenticated_client(
+    session: Session, httpx_transport: httpx.ASGITransport
+) -> AsyncIterator[httpx.AsyncClient]:
     headers = {"Authorization": f"Bearer {session.key}"}
 
-    async with httpx.AsyncClient(app=app, base_url="http://test", headers=headers) as c:
+    async with httpx.AsyncClient(
+        transport=httpx_transport, base_url="http://test", headers=headers
+    ) as c:
         yield c
