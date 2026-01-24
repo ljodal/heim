@@ -103,8 +103,14 @@ async def get_forecast_and_sensor_for_location(
     row = await db.fetchrow(
         """
         SELECT
-            (SELECT id FROM forecast WHERE location_id = $1 AND account_id = $2 LIMIT 1),
-            (SELECT id FROM sensor WHERE location_id = $1 AND account_id = $2 LIMIT 1)
+            (
+                SELECT id FROM forecast
+                WHERE location_id = $1 AND account_id = $2 LIMIT 1
+            ),
+            (
+                SELECT id FROM sensor
+                WHERE location_id = $1 AND account_id = $2 LIMIT 1
+            )
         """,
         location_id,
         account_id,
@@ -157,7 +163,12 @@ async def get_paired_observations(
     )
 
     return [
-        (row["forecast_created_at"], row["measured_at"], row["forecast_value"], row["observed_value"])
+        (
+            row["forecast_created_at"],
+            row["measured_at"],
+            row["forecast_value"],
+            row["observed_value"],
+        )
         for row in rows
     ]
 

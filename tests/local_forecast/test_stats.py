@@ -4,8 +4,6 @@ Tests for Welford's algorithm and statistics utilities.
 
 import math
 
-import pytest
-
 from heim.local_forecast.stats import (
     WelfordState,
     get_lead_time_bucket,

@@ -3,7 +3,7 @@ Background tasks for computing and updating forecast bias statistics.
 """
 
 from collections import defaultdict
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import structlog
 
@@ -113,7 +113,7 @@ async def update_forecast_bias_stats(
         )
 
     # Schedule next update in 1 hour
-    next_run = datetime.now(timezone.utc) + timedelta(hours=1)
+    next_run = datetime.now(UTC) + timedelta(hours=1)
     await update_forecast_bias_stats.defer(
         arguments={
             "account_id": account_id,

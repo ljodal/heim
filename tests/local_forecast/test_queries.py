@@ -2,10 +2,9 @@
 Tests for local forecast database queries.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 import pytest
-
 from heim.local_forecast.queries import (
     get_bias_stats,
     get_forecast_and_sensor_for_location,

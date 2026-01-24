@@ -2,8 +2,6 @@
 API endpoints for local forecast adjustments.
 """
 
-from datetime import datetime
-
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from ..auth.dependencies import current_account
@@ -74,7 +72,6 @@ async def get_adjusted_forecast(
 
     # Apply bias correction to each forecast value
     adjusted_values: list[AdjustedForecastValue] = []
-    now = datetime.now(created_at.tzinfo)
 
     for measured_at, raw_value in forecast_values:
         # Calculate lead time in hours

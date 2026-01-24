@@ -2,10 +2,9 @@
 Fixtures for local forecast tests.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
-
 from heim import db
 from heim.forecasts.queries import create_forecast, create_forecast_instance
 from heim.sensors.queries import save_measurements
@@ -40,7 +39,7 @@ async def forecast_id(connection: None, account_id: int, location_id: int) -> in
 @pytest.fixture
 def base_time() -> datetime:
     """Base time for test data."""
-    return datetime(2024, 1, 15, 12, 0, 0, tzinfo=timezone.utc)
+    return datetime(2024, 1, 15, 12, 0, 0, tzinfo=UTC)
 
 
 @pytest.fixture
