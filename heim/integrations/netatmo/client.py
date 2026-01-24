@@ -97,7 +97,7 @@ class NetatmoClient:
             params["device_id"] = device_id
 
         data = await self._api_request("getstationsdata", params=params)
-        return StationsDataResponse.model_validate(data)
+        return StationsDataResponse.model_validate(data["body"])
 
     async def get_measure(
         self,
