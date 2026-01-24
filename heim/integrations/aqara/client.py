@@ -4,7 +4,7 @@ import string
 import time
 from collections.abc import Iterable
 from datetime import datetime
-from typing import Any, TypeVar
+from typing import Any, Self, TypeVar
 
 import httpx
 
@@ -139,7 +139,7 @@ class AqaraClient:
     # Context manager #
     ###################
 
-    async def __aenter__(self) -> AqaraClient:
+    async def __aenter__(self) -> Self:
         if not self.client:
             self.client = httpx.AsyncClient()
         return self
