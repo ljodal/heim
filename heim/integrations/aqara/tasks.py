@@ -30,6 +30,13 @@ MODEL_TO_RESOURCE_MAPPING: dict[str, dict[str, Attribute]] = {
         "8.0.2008": Attribute.BATTERY_VOLTAGE,
         "8.0.9001": Attribute.BATTERY_LOW,
     },
+    "lumi.sensor_ht.agl02": {
+        "0.1.85": Attribute.AIR_TEMPERATURE,
+        "0.2.85": Attribute.HUMIDITY,
+        "0.3.85": Attribute.AIR_PRESSURE,
+        "8.0.2008": Attribute.BATTERY_VOLTAGE,
+        "8.0.9001": Attribute.BATTERY_LOW,
+    },
 }
 
 
