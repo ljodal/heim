@@ -71,7 +71,7 @@ async def update_aqara_account(
         *changed_fields.values(),
     )
 
-    return account.copy(update=changed_fields)
+    return account.model_copy(update=changed_fields)
 
 
 #####################

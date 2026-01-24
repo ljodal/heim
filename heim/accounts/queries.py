@@ -3,7 +3,7 @@ from typing import cast
 import asyncpg
 
 from .. import db
-from .models import Location
+from .models import Coordinate, Location
 from .utils import hash_password
 
 
@@ -56,7 +56,7 @@ async def get_locations(*, account_id: int) -> list[Location]:
         Location(
             id=location_id,
             name=name,
-            coordinate={"longitude": longitude, "latitude": latitude},
+            coordinate=Coordinate(longitude=longitude, latitude=latitude),
         )
         for location_id, name, (longitude, latitude) in locations
     ]

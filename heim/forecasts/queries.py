@@ -116,7 +116,7 @@ async def get_latest_forecast_values(
 
 async def get_instances(
     *, forecast_id: int, attribute: Attribute
-) -> dict[datetime, tuple[datetime, int]]:
+) -> dict[datetime, list[tuple[datetime, int]]]:
     """
     Get three instances for the given forecast: latest, 12 hours old and 24 hours old.
     """

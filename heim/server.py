@@ -34,7 +34,7 @@ Instrumentator().instrument(app).expose(app)
 from .frontend.messages import MessagesMiddleware  # noqa
 from .frontend.views import router as frontend_router  # noqa
 
-app.add_middleware(MessagesMiddleware)
+app.add_middleware(MessagesMiddleware)  # ty: ignore[invalid-argument-type]
 app.include_router(frontend_router)
 
 

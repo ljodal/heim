@@ -27,6 +27,7 @@ heim = "heim.cli:cli"
 [dependency-groups]
 dev = [
     "ruff>=0.9",
+    "ty>=0.0.13",
     "mypy>=1",
     "ipython>=9",
     "types-croniter>=6",
@@ -52,6 +53,9 @@ src = ["heim", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP"]
+
+[tool.ty]
+rules = { unused-ignore-comment = "ignore" }
 
 [tool.mypy]
 python_version = "3.14"
