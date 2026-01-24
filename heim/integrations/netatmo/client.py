@@ -4,7 +4,12 @@ from typing import Any
 
 import httpx
 
-from .exceptions import ExpiredAccessToken, InvalidRefreshToken, NetatmoAPIError
+from .exceptions import (
+    ExpiredAccessToken,
+    InvalidGrant,
+    InvalidRefreshToken,
+    NetatmoAPIError,
+)
 from .types import (
     StationsDataResponse,
     TokenResponse,
@@ -75,9 +80,21 @@ class NetatmoClient:
         if response.status_code == 400:
             error_data = response.json()
             error = error_data.get("error", "")
+            error_description = error_data.get("error_description", "")
             if error == "invalid_grant":
-                raise InvalidRefreshToken("Refresh token is invalid or expired")
-            raise NetatmoAPIError(f"Token request failed: {error}")
+                grant_type = data.get("grant_type", "")
+                if grant_type == "refresh_token":
+                    raise InvalidRefreshToken(
+                        f"Refresh token is invalid or expired: {error_description}"
+                    )
+                else:
+                    raise InvalidGrant(
+                        f"Authorization code is invalid, expired, or already used: "
+                        f"{error_description}"
+                    )
+            raise NetatmoAPIError(
+                f"Token request failed: {error} - {error_description}"
+            )
 
         response.raise_for_status()
         return TokenResponse.model_validate(response.json())

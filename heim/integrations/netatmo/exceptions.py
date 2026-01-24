@@ -6,5 +6,11 @@ class ExpiredAccessToken(NetatmoAPIError):
     pass
 
 
-class InvalidRefreshToken(NetatmoAPIError):
+class InvalidGrant(NetatmoAPIError):
+    """The authorization code or refresh token is invalid or expired."""
+
+    pass
+
+
+class InvalidRefreshToken(InvalidGrant):
     pass
