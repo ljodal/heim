@@ -4,7 +4,7 @@ Home automation dashboard with sensor data visualization and weather forecasts.
 
 ## Tech Stack
 
-- **Backend**: Python 3.14+, FastAPI, asyncpg
+- **Backend**: Python 3.13+, FastAPI, asyncpg
 - **Frontend**: Jinja2 templates, Bootstrap, Chart.js
 - **Database**: PostgreSQL 18
 - **Deployment**: Docker with docker-compose

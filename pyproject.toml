@@ -4,7 +4,7 @@ version = "0.1.0"
 description = ""
 authors = [{ name = "Sigurd Ljødal", email = "sigurd@ljodal.no" }]
 license = { text = "MIT" }
-requires-python = ">=3.14"
+requires-python = ">=3.13"
 dependencies = [
     "httpx>=0.28",
     "asyncpg>=0.31",
@@ -48,7 +48,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.ruff]
-target-version = "py314"
+target-version = "py313"
 src = ["heim", "tests"]
 
 [tool.ruff.lint]
@@ -58,7 +58,7 @@ select = ["E", "F", "W", "I", "B", "UP"]
 rules = { unused-ignore-comment = "ignore" }
 
 [tool.mypy]
-python_version = "3.14"
+python_version = "3.13"
 files = ["heim", "tests"]
 plugins = ["pydantic.mypy"]
 strict = true
