@@ -4,16 +4,6 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
-def to_snake(name: str) -> str:
-    """Convert camelCase to snake_case."""
-    result = []
-    for i, char in enumerate(name):
-        if char.isupper() and i > 0:
-            result.append("_")
-        result.append(char.lower())
-    return "".join(result)
-
-
 class TokenResponse(BaseModel):
     """Response from OAuth token endpoint."""
 
@@ -127,19 +117,3 @@ class StationsDataResponse(BaseModel):
 
     devices: list[Station]
     user: dict[str, Any] | None = None
-
-
-class MeasureValue(BaseModel):
-    """A single measurement point from getmeasure endpoint."""
-
-    timestamp: datetime
-    value: float
-
-
-class GetMeasureResponse(BaseModel):
-    """Response from /api/getmeasure endpoint."""
-
-    body: dict[str, list[list[float | None]]]
-    status: str
-    time_exec: float | None = None
-    time_server: datetime | None = None

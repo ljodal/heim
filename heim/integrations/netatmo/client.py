@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 import httpx
@@ -144,7 +144,7 @@ class NetatmoClient:
 
         body = data.get("body", {})
         for timestamp_str, values in body.items():
-            timestamp = datetime.fromtimestamp(int(timestamp_str))
+            timestamp = datetime.fromtimestamp(int(timestamp_str), tz=UTC)
             for i, measure_type in enumerate(measure_types):
                 if i < len(values):
                     result[measure_type].append((timestamp, values[i]))
