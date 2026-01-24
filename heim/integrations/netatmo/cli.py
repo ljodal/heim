@@ -37,12 +37,13 @@ def accounts() -> None:
 
 
 @accounts.command(name="auth", help="Open browser to authorize with Netatmo")
-def auth() -> None:
+@click.option("--account-id", "-a", type=int, default=1, help="Heim account ID")
+def auth(*, account_id: int) -> None:
     """
     Open a browser to authorize with Netatmo.
 
     After authorization, you'll be redirected to the heim server which will
-    display the command to run to complete the linking.
+    automatically link your Netatmo account.
     """
     client_id = os.getenv("NETATMO_CLIENT_ID")
     if not client_id:
@@ -51,15 +52,17 @@ def auth() -> None:
 
     redirect_uri = get_redirect_uri()
 
+    # Use state parameter to pass account_id through OAuth flow
     params = {
         "client_id": client_id,
         "redirect_uri": redirect_uri,
         "scope": " ".join(SCOPES),
-        "state": "heim",
+        "state": str(account_id),
     }
 
     auth_url = f"{AUTH_BASE_URL}?{urlencode(params)}"
 
+    click.echo(f"Linking to Heim account #{account_id}")
     click.echo("Opening browser for Netatmo authorization...")
     click.echo(f"\nIf the browser doesn't open, visit:\n{auth_url}\n")
     click.echo("Make sure the heim server is running (uvicorn heim.server:app)")
