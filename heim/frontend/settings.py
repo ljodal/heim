@@ -26,7 +26,9 @@ from ..integrations.netatmo.queries import (
     has_netatmo_account,
 )
 from ..integrations.netatmo.services import with_netatmo_client
-from ..integrations.netatmo.tasks import update_sensor_data as update_netatmo_sensor_data
+from ..integrations.netatmo.tasks import (
+    update_sensor_data as update_netatmo_sensor_data,
+)
 from .dependencies import CurrentAccount
 from .messages import Messages, get_messages
 
@@ -184,14 +186,18 @@ async def netatmo_index(
 ) -> Response:
     """Netatmo integration settings."""
     if not is_netatmo_configured():
-        raise HTTPException(status_code=404, detail="Netatmo integration not configured")
+        raise HTTPException(
+            status_code=404, detail="Netatmo integration not configured"
+        )
 
     account_info = await get_netatmo_account_info(account_id=account_id)
     netatmo_account = None
     if account_info:
         netatmo_account = {"id": account_info[0], "expires_at": account_info[1]}
 
-    sensors = await get_netatmo_sensors(account_id=account_id) if netatmo_account else []
+    sensors = (
+        await get_netatmo_sensors(account_id=account_id) if netatmo_account else []
+    )
     locations = await get_locations(account_id=account_id)
 
     context = {
