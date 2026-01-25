@@ -1,6 +1,6 @@
 import os
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Self
 
 import httpx
 import structlog
@@ -223,7 +223,7 @@ class NetatmoClient:
     # Context manager #
     ###################
 
-    async def __aenter__(self) -> NetatmoClient:
+    async def __aenter__(self) -> Self:
         if not self.client:
             self.client = httpx.AsyncClient()
         return self
