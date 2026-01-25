@@ -1,0 +1,60 @@
+{% extends "settings/layout.html" %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/settings/locations/">Locations</a></li>
+    <li class="breadcrumb-item active" aria-current="page">New Location</li>
+  </ol>
+</nav>
+
+<h2>Add New Location</h2>
+<p class="text-body-secondary">Create a new monitoring location with geographic coordinates for weather forecasts.</p>
+
+<div class="row">
+  <div class="col-md-6">
+    <form method="post" action="/settings/locations/new/">
+      <div class="mb-3">
+        <label for="name" class="form-label">Name</label>
+        <input type="text" class="form-control" id="name" name="name" required placeholder="e.g., Home, Office, Cabin">
+        <div class="form-text">A friendly name for this location.</div>
+      </div>
+
+      <div class="mb-3">
+        <label for="latitude" class="form-label">Latitude</label>
+        <input type="number" class="form-control" id="latitude" name="latitude" step="0.000001" required placeholder="e.g., 59.9139">
+        <div class="form-text">Latitude in decimal degrees (e.g., 59.9139 for Oslo).</div>
+      </div>
+
+      <div class="mb-3">
+        <label for="longitude" class="form-label">Longitude</label>
+        <input type="number" class="form-control" id="longitude" name="longitude" step="0.000001" required placeholder="e.g., 10.7522">
+        <div class="form-text">Longitude in decimal degrees (e.g., 10.7522 for Oslo).</div>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary">Create Location</button>
+        <a href="/settings/locations/" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card bg-body-tertiary">
+      <div class="card-body">
+        <h6 class="card-title">Finding Coordinates</h6>
+        <p class="card-text small">
+          You can find the latitude and longitude of any address using:
+        </p>
+        <ul class="small">
+          <li><a href="https://www.google.com/maps" target="_blank">Google Maps</a> - Right-click on a location and select the coordinates</li>
+          <li><a href="https://www.openstreetmap.org" target="_blank">OpenStreetMap</a> - The coordinates are shown in the URL when you click a location</li>
+        </ul>
+        <p class="card-text small mb-0">
+          The coordinates are used for fetching weather forecasts from Yr.no.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -33,9 +33,11 @@ app = FastAPI(lifespan=configure_database)
 Instrumentator().instrument(app).expose(app)
 
 from .frontend.messages import MessagesMiddleware  # noqa
+from .frontend.settings import router as settings_router  # noqa
 from .frontend.views import router as frontend_router  # noqa
 
 app.add_middleware(MessagesMiddleware)  # ty: ignore[invalid-argument-type]
+app.include_router(settings_router)
 app.include_router(frontend_router)
 
 

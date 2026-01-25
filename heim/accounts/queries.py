@@ -60,3 +60,37 @@ async def get_locations(*, account_id: int) -> list[Location]:
         )
         for location_id, name, (longitude, latitude) in locations
     ]
+
+
+async def get_location(*, account_id: int, location_id: int) -> Location | None:
+    """Get a single location by ID"""
+    row = await db.fetchrow(
+        "SELECT id, name, coordinate FROM location WHERE id = $1 AND account_id = $2",
+        location_id,
+        account_id,
+    )
+    if row is None:
+        return None
+    location_id, name, (longitude, latitude) = row
+    return Location(
+        id=location_id,
+        name=name,
+        coordinate=Coordinate(longitude=longitude, latitude=latitude),
+    )
+
+
+async def update_location(
+    *, account_id: int, location_id: int, name: str, coordinate: tuple[float, float]
+) -> None:
+    """Update an existing location"""
+    await db.execute(
+        """
+        UPDATE location
+        SET name = $1, coordinate = $2
+        WHERE id = $3 AND account_id = $4
+        """,
+        name,
+        coordinate,
+        location_id,
+        account_id,
+    )
