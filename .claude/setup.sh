@@ -19,8 +19,8 @@ if ! command -v uv &> /dev/null; then
     fi
 fi
 
-# Install Python 3.14 using uv
-uv python install 3.14
+# Install Python 3.13 using uv
+uv python install 3.13
 
 # Install project dependencies (including dev tools)
 cd "$CLAUDE_PROJECT_DIR"
