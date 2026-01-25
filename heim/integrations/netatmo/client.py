@@ -1,11 +1,9 @@
-import logging
 import os
 from datetime import UTC, datetime
 from typing import Any
 
 import httpx
-
-logger = logging.getLogger(__name__)
+import structlog
 
 from .exceptions import (
     ExpiredAccessToken,
@@ -14,9 +12,12 @@ from .exceptions import (
     NetatmoAPIError,
 )
 from .types import (
+    MeasureResponse,
     StationsDataResponse,
     TokenResponse,
 )
+
+logger = structlog.get_logger()
 
 # Netatmo API endpoints
 AUTH_URL = "https://api.netatmo.com/oauth2/token"
@@ -145,6 +146,9 @@ class NetatmoClient:
         """
         Get historical measurements for a device/module.
 
+        Automatically paginates through results since the API limits responses
+        to 1024 data points per request.
+
         Args:
             device_id: The station ID
             module_id: The module ID (None for main station)
@@ -156,31 +160,62 @@ class NetatmoClient:
         Returns:
             Dict mapping measure type to list of (timestamp, value) tuples
         """
-        params: dict[str, str] = {
-            "device_id": device_id,
-            "scale": scale,
-            "type": ",".join(measure_types),
-        }
-        if module_id:
-            params["module_id"] = module_id
-        if date_begin:
-            params["date_begin"] = str(int(date_begin.timestamp()))
-        if date_end:
-            params["date_end"] = str(int(date_end.timestamp()))
-
-        data = await self._api_request("getmeasure", params=params)
-
-        # Parse the response - it's a dict of timestamp -> [values]
         result: dict[str, list[tuple[datetime, float | None]]] = {
             measure_type: [] for measure_type in measure_types
         }
 
-        body = data.get("body", {})
-        for timestamp_str, values in body.items():
-            timestamp = datetime.fromtimestamp(int(timestamp_str), tz=UTC)
-            for i, measure_type in enumerate(measure_types):
-                if i < len(values):
-                    result[measure_type].append((timestamp, values[i]))
+        current_begin = int(date_begin.timestamp()) if date_begin else None
+        end_timestamp = int(date_end.timestamp()) if date_end else None
+
+        while True:
+            params: dict[str, str] = {
+                "device_id": device_id,
+                "scale": scale,
+                "type": ",".join(measure_types),
+            }
+            if module_id:
+                params["module_id"] = module_id
+            if current_begin:
+                params["date_begin"] = str(current_begin)
+            if end_timestamp:
+                params["date_end"] = str(end_timestamp)
+
+            data = await self._api_request("getmeasure", params=params)
+            response = MeasureResponse.model_validate(data)
+
+            if not response.body:
+                break
+
+            # Track the latest timestamp we've seen for pagination
+            latest_timestamp = 0
+            batch_count = 0
+
+            for batch in response.body:
+                timestamps = batch.timestamps()
+                for idx, values in enumerate(batch.value):
+                    ts = timestamps[idx]
+                    latest_timestamp = max(latest_timestamp, ts)
+                    batch_count += 1
+
+                    timestamp = datetime.fromtimestamp(ts, tz=UTC)
+                    for i, measure_type in enumerate(measure_types):
+                        if i < len(values) and values[i] is not None:
+                            result[measure_type].append((timestamp, values[i]))
+
+            # If we got fewer than 1024 points, we're done
+            # Otherwise, continue from the last timestamp + 1
+            if batch_count < 1024:
+                break
+
+            current_begin = latest_timestamp + 1
+            if end_timestamp and current_begin >= end_timestamp:
+                break
+
+            logger.info(
+                "Paginating getmeasure request",
+                batch_count=batch_count,
+                next_begin=current_begin,
+            )
 
         return result
 

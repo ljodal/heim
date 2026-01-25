@@ -121,16 +121,18 @@ async def update_sensor_data(
 
         for timestamp, value in data_points:
             if value is not None:
-                # Convert value based on attribute type
-                # Temperature is in Celsius with 1 decimal, multiply by 10
-                # Pressure is in mbar, store with 1 decimal precision
-                # Humidity is percentage, store as-is
-                # CO2 is ppm, store as-is
-                # Noise is dB, store as-is
-                if attribute == Attribute.AIR_TEMPERATURE:
-                    float_value = value * 10
-                elif attribute == Attribute.AIR_PRESSURE:
-                    float_value = value * 10  # Store with 1 decimal precision
+                # Convert value based on attribute type to match Aqara format:
+                # Temperature: Netatmo gives 23.4°C, store as 2340 (×100)
+                # Humidity: Netatmo gives 45%, store as 4500 (×100)
+                # Pressure: Netatmo gives 1019.2 mbar, store as 101920 (×100)
+                # CO2: Netatmo gives 650 ppm, store as-is
+                # Noise: Netatmo gives 32 dB, store as-is
+                if attribute in (
+                    Attribute.AIR_TEMPERATURE,
+                    Attribute.HUMIDITY,
+                    Attribute.AIR_PRESSURE,
+                ):
+                    float_value = value * 100
                 else:
                     float_value = value
 

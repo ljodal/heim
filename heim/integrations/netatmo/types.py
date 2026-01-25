@@ -117,3 +117,24 @@ class StationsDataResponse(BaseModel):
 
     devices: list[Station]
     user: dict[str, Any] | None = None
+
+
+class MeasureBatch(BaseModel):
+    """A batch of measurements from getmeasure endpoint."""
+
+    beg_time: int
+    step_time: int = 0  # May be missing for single-value batches
+    value: list[list[float | int | None]]
+
+    def timestamps(self) -> list[int]:
+        """Get the timestamp for each value in the batch."""
+        return [self.beg_time + (i * self.step_time) for i in range(len(self.value))]
+
+
+class MeasureResponse(BaseModel):
+    """Response from /api/getmeasure endpoint."""
+
+    body: list[MeasureBatch]
+    status: str
+    time_exec: float | None = None
+    time_server: int | None = None

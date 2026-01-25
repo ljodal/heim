@@ -18,7 +18,9 @@ SCOPES = ["read_station"]
 
 def get_redirect_uri() -> str:
     """Get the redirect URI, defaulting to the heim server callback."""
-    return os.getenv("NETATMO_REDIRECT_URI", "http://localhost:8000/api/netatmo/callback")
+    return os.getenv(
+        "NETATMO_REDIRECT_URI", "http://localhost:8000/api/netatmo/callback"
+    )
 
 
 @click.group(name="netatmo", help="Manage Netatmo weather stations")
