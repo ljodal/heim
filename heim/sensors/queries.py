@@ -106,7 +106,7 @@ async def get_measurements_averaged(
         since,
         bucket_minutes,
     )
-    return [(row["bucket"], row["avg_value"]) for row in rows]
+    return [(row["bucket"], float(row["avg_value"])) for row in rows]
 
 
 async def save_measurements(
