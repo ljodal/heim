@@ -75,8 +75,13 @@
         const { event } = args;
         if (event.type === 'mousemove' && event.x >= chart.chartArea.left && event.x <= chart.chartArea.right) {
           chart._crosshairX = event.x;
+          chart._crosshairY = event.y;
+          // Update our custom tooltip directly
+          updateCustomTooltip(chart);
         } else if (event.type === 'mouseout') {
           chart._crosshairX = null;
+          chart._crosshairY = null;
+          updateCustomTooltip(chart);
         }
       },
       afterDraw: (chart) => {
@@ -114,7 +119,7 @@
       axis: 'x',
     };
 
-    // Find value at x position for a dataset (step function - shows previous reading)
+    // Find nearest value at x position for a dataset
     function getValueAtPosition(dataset, xPos) {
       const data = dataset.data;
       if (!data || data.length === 0) return null;
@@ -126,55 +131,112 @@
       // Don't show values outside the data range
       if (xPos < firstX || xPos > lastX) return null;
 
-      // Find the last point at or before xPos
-      let lastBefore = null;
+      // Find the nearest point to xPos
+      let nearest = null;
+      let nearestDist = Infinity;
       for (let i = 0; i < data.length; i++) {
         const point = data[i];
         const px = point.x instanceof Date ? point.x.getTime() : point.x;
-        if (px <= xPos) lastBefore = point.y;
+        const dist = Math.abs(px - xPos);
+        if (dist < nearestDist) {
+          nearestDist = dist;
+          nearest = point.y;
+        }
       }
 
-      return lastBefore;
+      return nearest;
+    }
+
+    // Get or create tooltip element
+    function getOrCreateTooltip(chart) {
+      let tooltipEl = chart.canvas.parentNode.querySelector('.custom-tooltip');
+      if (!tooltipEl) {
+        tooltipEl = document.createElement('div');
+        tooltipEl.className = 'custom-tooltip';
+        tooltipEl.style.cssText = `
+          background: rgba(0, 0, 0, 0.8);
+          border-radius: 4px;
+          color: white;
+          opacity: 0;
+          pointer-events: none;
+          position: absolute;
+          transition: opacity 0.1s ease;
+          padding: 8px 12px;
+          font-size: 12px;
+          font-family: system-ui, sans-serif;
+          white-space: nowrap;
+          z-index: 100;
+        `;
+        chart.canvas.parentNode.style.position = 'relative';
+        chart.canvas.parentNode.appendChild(tooltipEl);
+      }
+      return tooltipEl;
+    }
+
+    // Update custom tooltip - called directly from crosshair plugin
+    function updateCustomTooltip(chart) {
+      const tooltipEl = getOrCreateTooltip(chart);
+
+      // Hide if mouse not in chart area
+      if (!chart._crosshairX) {
+        tooltipEl.style.opacity = 0;
+        return;
+      }
+
+      const xPos = chart._crosshairX;
+      const xValue = chart.scales.x.getValueForPixel(xPos);
+      const date = new Date(xValue);
+
+      // Build tooltip content
+      const title = date.toLocaleString('en-GB', {
+        weekday: 'short',
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      let innerHtml = `<div style="margin-bottom: 6px; font-weight: 500;">${title}</div>`;
+
+      chart.data.datasets.forEach((dataset) => {
+        const value = getValueAtPosition(dataset, xValue);
+        if (value !== null && value !== undefined) {
+          // Get the color - handle both function and string colors
+          let color = dataset.borderColor;
+          const opacity = dataset._opacity || 1;
+          if (typeof color === 'function') {
+            // For gradient/temperature colors, use the value to get the color
+            color = getColorForTemp(value, opacity);
+          }
+          innerHtml += `
+            <div style="display: flex; align-items: center; gap: 6px; margin: 2px 0;">
+              <span style="display: inline-block; width: 12px; height: 3px; background: ${color};"></span>
+              <span>${dataset.label}: ${value.toFixed(1)}°C</span>
+            </div>
+          `;
+        }
+      });
+
+      tooltipEl.innerHTML = innerHtml;
+      tooltipEl.style.opacity = 1;
+
+      // Position tooltip following mouse with left/right switching
+      const { offsetLeft: positionX, offsetTop: positionY } = chart.canvas;
+      const chartCenter = (chart.chartArea.left + chart.chartArea.right) / 2;
+      const mouseX = chart._crosshairX || 0;
+      const mouseY = chart._crosshairY || 0;
+
+      // Switch sides based on mouse position
+      if (mouseX > chartCenter) {
+        tooltipEl.style.left = positionX + mouseX - tooltipEl.offsetWidth - 10 + 'px';
+      } else {
+        tooltipEl.style.left = positionX + mouseX + 10 + 'px';
+      }
+      tooltipEl.style.top = positionY + mouseY - tooltipEl.offsetHeight / 2 + 'px';
     }
 
     const commonTooltip = {
-      position: 'followMouse',
-      callbacks: {
-        title: (items, data) => {
-          if (!items.length) return '';
-          const chart = items[0].chart;
-          const xPos = chart._crosshairX;
-          if (!xPos) return '';
-          const xValue = chart.scales.x.getValueForPixel(xPos);
-          const date = new Date(xValue);
-          return date.toLocaleString('en-GB', {
-            weekday: 'short',
-            day: 'numeric',
-            month: 'short',
-            hour: '2-digit',
-            minute: '2-digit'
-          });
-        },
-        beforeBody: (items) => {
-          if (!items.length) return [];
-          const chart = items[0].chart;
-          const xPos = chart._crosshairX;
-          if (!xPos) return [];
-
-          const xValue = chart.scales.x.getValueForPixel(xPos);
-          const lines = [];
-
-          chart.data.datasets.forEach((dataset) => {
-            const value = getValueAtPosition(dataset, xValue);
-            if (value !== null && value !== undefined) {
-              lines.push(`${dataset.label}: ${value.toFixed(1)}°C`);
-            }
-          });
-
-          return lines;
-        },
-        label: () => null, // We handle all labels in beforeBody
-      },
+      enabled: false,
     };
 
     // Temperature thresholds and colors for gradient
@@ -286,6 +348,7 @@
           fill: false,
           pointRadius: 0,
           borderWidth: 1.5,
+          _opacity: opacity,
         });
       });
 
