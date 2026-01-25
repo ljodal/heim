@@ -2,30 +2,21 @@ from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
-from pydantic import TypeAdapter
 
-from ...frontend.messages import Level, Message
+from ...frontend.messages import Messages
 from .client import NetatmoClient
 from .exceptions import InvalidGrant, NetatmoAPIError
 from .queries import create_netatmo_account
 
 router = APIRouter(prefix="/netatmo", tags=["netatmo"])
 
-# For encoding flash messages in cookies
-_message_adapter = TypeAdapter(list[Message])
-
-
-def _redirect_with_message(url: str, level: Level, message: str) -> RedirectResponse:
-    """Create a redirect response with a flash message cookie."""
-    response = RedirectResponse(url=url, status_code=303)
-    messages = [Message(level=level, message=message)]
-    response.set_cookie("messages", _message_adapter.dump_json(messages).decode())
-    return response
+REDIRECT_URL = "/settings/netatmo/"
 
 
 @router.get("/callback")
 async def oauth_callback(
     request: Request,
+    messages: Messages,
     code: str | None = None,
     error: str | None = None,
     error_description: str | None = None,
@@ -47,14 +38,12 @@ async def oauth_callback(
         msg = f"Authorization failed: {error}"
         if error_description:
             msg += f" - {error_description}"
-        return _redirect_with_message("/settings/netatmo/", "error", msg)
+        messages.error(msg)
+        return RedirectResponse(url=REDIRECT_URL, status_code=303)
 
     if not code:
-        return _redirect_with_message(
-            "/settings/netatmo/",
-            "error",
-            "Authorization failed: No authorization code was provided.",
-        )
+        messages.error("Authorization failed: No authorization code was provided.")
+        return RedirectResponse(url=REDIRECT_URL, status_code=303)
 
     # Build the redirect URI (must match what was used in the auth request)
     redirect_uri = str(request.url_for("oauth_callback"))
@@ -72,29 +61,17 @@ async def oauth_callback(
             expires_at=datetime.now(UTC) + timedelta(seconds=result.expires_in),
         )
 
-        return _redirect_with_message(
-            "/settings/netatmo/",
-            "success",
-            "Netatmo account linked successfully! You can now add sensors.",
+        messages.success(
+            "Netatmo account linked successfully! You can now add sensors."
         )
 
     except InvalidGrant as e:
-        return _redirect_with_message(
-            "/settings/netatmo/",
-            "error",
-            f"Authorization failed: {e}",
-        )
+        messages.error(f"Authorization failed: {e}")
 
     except NetatmoAPIError as e:
-        return _redirect_with_message(
-            "/settings/netatmo/",
-            "error",
-            f"Netatmo API error: {e}",
-        )
+        messages.error(f"Netatmo API error: {e}")
 
     except Exception as e:
-        return _redirect_with_message(
-            "/settings/netatmo/",
-            "error",
-            f"Unexpected error: {e}",
-        )
+        messages.error(f"Unexpected error: {e}")
+
+    return RedirectResponse(url=REDIRECT_URL, status_code=303)
