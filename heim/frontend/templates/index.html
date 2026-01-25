@@ -68,6 +68,115 @@
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
   <script>
+    // Crosshair plugin - draws vertical line at mouse position
+    const crosshairPlugin = {
+      id: 'crosshair',
+      afterEvent: (chart, args) => {
+        const { event } = args;
+        if (event.type === 'mousemove' && event.x >= chart.chartArea.left && event.x <= chart.chartArea.right) {
+          chart._crosshairX = event.x;
+        } else if (event.type === 'mouseout') {
+          chart._crosshairX = null;
+        }
+      },
+      afterDraw: (chart) => {
+        if (chart._crosshairX !== null && chart._crosshairX !== undefined) {
+          const ctx = chart.ctx;
+          const x = chart._crosshairX;
+          const topY = chart.scales.y.top;
+          const bottomY = chart.scales.y.bottom;
+
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(x, topY);
+          ctx.lineTo(x, bottomY);
+          ctx.lineWidth = 1;
+          ctx.strokeStyle = 'rgba(150, 150, 255, 0.4)';
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+    };
+    Chart.register(crosshairPlugin);
+
+    // Custom tooltip positioner - follows mouse
+    Chart.Tooltip.positioners.followMouse = function(elements, eventPosition) {
+      return {
+        x: eventPosition.x,
+        y: eventPosition.y
+      };
+    };
+
+    // Common tooltip and interaction config for all charts
+    const commonInteraction = {
+      intersect: false,
+      mode: 'nearest',
+      axis: 'x',
+    };
+
+    // Find value at x position for a dataset (step function - shows previous reading)
+    function getValueAtPosition(dataset, xPos) {
+      const data = dataset.data;
+      if (!data || data.length === 0) return null;
+
+      // Get data range
+      const firstX = data[0].x instanceof Date ? data[0].x.getTime() : data[0].x;
+      const lastX = data[data.length - 1].x instanceof Date ? data[data.length - 1].x.getTime() : data[data.length - 1].x;
+
+      // Don't show values outside the data range
+      if (xPos < firstX || xPos > lastX) return null;
+
+      // Find the last point at or before xPos
+      let lastBefore = null;
+      for (let i = 0; i < data.length; i++) {
+        const point = data[i];
+        const px = point.x instanceof Date ? point.x.getTime() : point.x;
+        if (px <= xPos) lastBefore = point.y;
+      }
+
+      return lastBefore;
+    }
+
+    const commonTooltip = {
+      position: 'followMouse',
+      callbacks: {
+        title: (items, data) => {
+          if (!items.length) return '';
+          const chart = items[0].chart;
+          const xPos = chart._crosshairX;
+          if (!xPos) return '';
+          const xValue = chart.scales.x.getValueForPixel(xPos);
+          const date = new Date(xValue);
+          return date.toLocaleString('en-GB', {
+            weekday: 'short',
+            day: 'numeric',
+            month: 'short',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+        },
+        beforeBody: (items) => {
+          if (!items.length) return [];
+          const chart = items[0].chart;
+          const xPos = chart._crosshairX;
+          if (!xPos) return [];
+
+          const xValue = chart.scales.x.getValueForPixel(xPos);
+          const lines = [];
+
+          chart.data.datasets.forEach((dataset) => {
+            const value = getValueAtPosition(dataset, xValue);
+            if (value !== null && value !== undefined) {
+              lines.push(`${dataset.label}: ${value.toFixed(1)}°C`);
+            }
+          });
+
+          return lines;
+        },
+        label: () => null, // We handle all labels in beforeBody
+      },
+    };
+
     // Temperature thresholds and colors for gradient
     // Hard stop at zero: blue below, orange-to-red above
     const tempColorStops = [
@@ -185,12 +294,9 @@
         data: { datasets },
         options: {
           responsive: true,
-          interaction: {
-            intersect: false,
-            mode: 'nearest',
-            axis: 'x',
-          },
+          interaction: commonInteraction,
           plugins: {
+            tooltip: commonTooltip,
             annotation: {
               annotations: {
                 nowLine: {
@@ -292,6 +398,10 @@
         },
         options: {
           responsive: true,
+          interaction: commonInteraction,
+          plugins: {
+            tooltip: commonTooltip,
+          },
           scales: {
             x: {
               type: 'time',
@@ -377,12 +487,9 @@
         data: { datasets },
         options: {
           responsive: true,
-          interaction: {
-            intersect: false,
-            mode: 'nearest',
-            axis: 'x',
-          },
+          interaction: commonInteraction,
           plugins: {
+            tooltip: commonTooltip,
             legend: {
               display: true,
               position: 'right',
