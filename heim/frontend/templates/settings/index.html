@@ -29,5 +29,31 @@
       </div>
     </div>
   </div>
+
+  {% if netatmo_configured %}
+  <!-- Netatmo Card -->
+  <div class="col-md-6 col-lg-4 mb-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5 class="card-title">Netatmo Integration</h5>
+        <p class="card-text text-body-secondary">
+          {% if netatmo_account %}
+            Connected
+          {% else %}
+            Not connected
+          {% endif %}
+        </p>
+        {% if netatmo_account %}
+          <p class="small text-body-secondary mb-3">
+            Token expires: {{ netatmo_account.expires_at.strftime('%Y-%m-%d %H:%M') }}
+          </p>
+        {% endif %}
+        <a href="/settings/netatmo/" class="btn btn-outline-primary btn-sm">
+          {% if netatmo_account %}Manage Netatmo{% else %}Connect Netatmo{% endif %}
+        </a>
+      </div>
+    </div>
+  </div>
+  {% endif %}
 </div>
 {% endblock %}

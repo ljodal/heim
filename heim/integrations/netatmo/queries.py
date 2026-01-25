@@ -31,6 +31,28 @@ async def create_netatmo_account(
     )
 
 
+async def has_netatmo_account(*, account_id: int) -> bool:
+    """Check if a Netatmo account is linked for the given account."""
+    row = await db.fetchrow(
+        "SELECT id FROM netatmo_account WHERE account_id = $1",
+        account_id,
+    )
+    return row is not None
+
+
+async def get_netatmo_account_info(
+    *, account_id: int
+) -> tuple[int, datetime] | None:
+    """Get Netatmo account info (id, expires_at) or None if not linked."""
+    row = await db.fetchrow(
+        "SELECT id, expires_at FROM netatmo_account WHERE account_id = $1",
+        account_id,
+    )
+    if row:
+        return row["id"], row["expires_at"]
+    return None
+
+
 async def get_netatmo_account(
     *, account_id: int, for_update: bool = False
 ) -> NetatmoAccount:
@@ -174,3 +196,12 @@ async def get_netatmo_sensor(
     netatmo_id, station_id, module_type, last_update_time = row
 
     return netatmo_id, station_id, module_type, last_update_time
+
+
+async def get_netatmo_sensor_device_id(*, sensor_id: int) -> str | None:
+    """Get the Netatmo device ID for a sensor."""
+    row = await db.fetchrow(
+        "SELECT netatmo_id FROM netatmo_sensor WHERE sensor_id = $1",
+        sensor_id,
+    )
+    return row["netatmo_id"] if row else None
