@@ -51,6 +51,19 @@
               </a>
             </li>
           </ul>
+
+          {% if is_netatmo_configured() %}
+          <h6 class="px-3 mb-2 text-body-secondary text-uppercase small">
+            Integrations
+          </h6>
+          <ul class="nav flex-column">
+            <li class="nav-item">
+              <a class="nav-link {% if active_tab == 'netatmo' %}active{% endif %}" href="/settings/netatmo/">
+                Netatmo
+              </a>
+            </li>
+          </ul>
+          {% endif %}
         </div>
       </nav>
 

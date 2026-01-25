@@ -1,27 +1,27 @@
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
+from fastapi.responses import RedirectResponse
 
+from ...frontend.messages import Messages
 from .client import NetatmoClient
 from .exceptions import InvalidGrant, NetatmoAPIError
 from .queries import create_netatmo_account
 
 router = APIRouter(prefix="/netatmo", tags=["netatmo"])
-templates = Jinja2Templates(
-    directory=["heim/frontend/templates", "heim/integrations/netatmo/templates"]
-)
+
+REDIRECT_URL = "/settings/netatmo/"
 
 
-@router.get("/callback", response_class=HTMLResponse)
+@router.get("/callback")
 async def oauth_callback(
     request: Request,
+    messages: Messages,
     code: str | None = None,
     error: str | None = None,
     error_description: str | None = None,
     state: str | None = None,
-) -> HTMLResponse:
+) -> RedirectResponse:
     """
     OAuth callback endpoint for Netatmo authorization.
 
@@ -35,26 +35,15 @@ async def oauth_callback(
         account_id = 1
 
     if error:
-        return templates.TemplateResponse(
-            "callback.html",
-            {
-                "request": request,
-                "success": False,
-                "error": error,
-                "error_description": error_description,
-            },
-        )
+        msg = f"Authorization failed: {error}"
+        if error_description:
+            msg += f" - {error_description}"
+        messages.error(msg)
+        return RedirectResponse(url=REDIRECT_URL, status_code=303)
 
     if not code:
-        return templates.TemplateResponse(
-            "callback.html",
-            {
-                "request": request,
-                "success": False,
-                "error": "missing_code",
-                "error_description": "No authorization code was provided.",
-            },
-        )
+        messages.error("Authorization failed: No authorization code was provided.")
+        return RedirectResponse(url=REDIRECT_URL, status_code=303)
 
     # Build the redirect URI (must match what was used in the auth request)
     redirect_uri = str(request.url_for("oauth_callback"))
@@ -72,44 +61,17 @@ async def oauth_callback(
             expires_at=datetime.now(UTC) + timedelta(seconds=result.expires_in),
         )
 
-        return templates.TemplateResponse(
-            "callback.html",
-            {
-                "request": request,
-                "success": True,
-                "account_id": account_id,
-            },
+        messages.success(
+            "Netatmo account linked successfully! You can now add sensors."
         )
 
     except InvalidGrant as e:
-        return templates.TemplateResponse(
-            "callback.html",
-            {
-                "request": request,
-                "success": False,
-                "error": "invalid_grant",
-                "error_description": str(e),
-            },
-        )
+        messages.error(f"Authorization failed: {e}")
 
     except NetatmoAPIError as e:
-        return templates.TemplateResponse(
-            "callback.html",
-            {
-                "request": request,
-                "success": False,
-                "error": "api_error",
-                "error_description": str(e),
-            },
-        )
+        messages.error(f"Netatmo API error: {e}")
 
     except Exception as e:
-        return templates.TemplateResponse(
-            "callback.html",
-            {
-                "request": request,
-                "success": False,
-                "error": "unexpected_error",
-                "error_description": str(e),
-            },
-        )
+        messages.error(f"Unexpected error: {e}")
+
+    return RedirectResponse(url=REDIRECT_URL, status_code=303)

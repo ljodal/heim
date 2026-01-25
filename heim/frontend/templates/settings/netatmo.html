@@ -1,0 +1,66 @@
+{% extends "settings/layout.html" %}
+
+{% block content %}
+<h2>Netatmo Integration</h2>
+<p class="text-body-secondary">Connect your Netatmo weather station to monitor temperature, humidity, and more.</p>
+
+{% if netatmo_account %}
+  <div class="card mb-4">
+    <div class="card-body">
+      <h5 class="card-title">Account Status</h5>
+      <p class="card-text">
+        <span class="badge bg-success">Connected</span>
+      </p>
+      <p class="small text-body-secondary mb-0">
+        Token expires: {{ netatmo_account.expires_at.strftime('%Y-%m-%d %H:%M') }}
+      </p>
+    </div>
+  </div>
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4>Sensors</h4>
+    <a href="/settings/netatmo/devices/" class="btn btn-primary btn-sm">Add Sensor</a>
+  </div>
+
+  {% if sensors %}
+    <div class="table-responsive">
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Type</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for sensor_id, name, module_type in sensors %}
+            <tr>
+              <td>{{ name }}</td>
+              <td>
+                <span class="badge bg-secondary">{{ module_type }}</span>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="alert alert-info">
+      No sensors configured yet.
+      <a href="/settings/netatmo/devices/">Add your first sensor</a> from your Netatmo devices.
+    </div>
+  {% endif %}
+
+{% else %}
+  <div class="card">
+    <div class="card-body text-center py-5">
+      <h5 class="card-title">Connect Your Netatmo Account</h5>
+      <p class="card-text text-body-secondary">
+        Link your Netatmo account to import weather station data.
+      </p>
+      <a href="/settings/netatmo/link/" class="btn btn-primary">
+        Connect Netatmo
+      </a>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}
