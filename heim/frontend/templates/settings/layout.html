@@ -50,6 +50,16 @@
                 Locations
               </a>
             </li>
+            <li class="nav-item">
+              <a class="nav-link {% if active_tab == 'sensors' %}active{% endif %}" href="/settings/sensors/">
+                Sensors
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link {% if active_tab == 'forecasts' %}active{% endif %}" href="/settings/forecasts/">
+                Forecasts
+              </a>
+            </li>
           </ul>
 
           {% if is_netatmo_configured() %}

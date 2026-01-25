@@ -168,3 +168,63 @@ async def get_instances(
     )
 
     return {created_at: values for created_at, values in rows}
+
+
+async def get_all_forecasts(
+    *, account_id: int
+) -> list[tuple[int, str | None, int, str | None]]:
+    """
+    Get all forecasts for an account.
+    Returns list of (id, name, location_id, location_name) tuples.
+    """
+    rows = await db.fetch(
+        """
+        SELECT f.id, f.name, f.location_id, l.name as location_name
+        FROM forecast f
+        JOIN location l ON l.id = f.location_id
+        WHERE f.account_id = $1
+        ORDER BY l.name, f.name
+        """,
+        account_id,
+    )
+    return [
+        (row["id"], row["name"], row["location_id"], row["location_name"])
+        for row in rows
+    ]
+
+
+async def get_forecast_by_id(
+    *, account_id: int, forecast_id: int
+) -> tuple[int, str | None, int, str | None] | None:
+    """
+    Get a single forecast by ID.
+    Returns (id, name, location_id, location_name) or None.
+    """
+    row = await db.fetchrow(
+        """
+        SELECT f.id, f.name, f.location_id, l.name as location_name
+        FROM forecast f
+        JOIN location l ON l.id = f.location_id
+        WHERE f.id = $1 AND f.account_id = $2
+        """,
+        forecast_id,
+        account_id,
+    )
+    if not row:
+        return None
+    return (row["id"], row["name"], row["location_id"], row["location_name"])
+
+
+async def update_forecast(*, account_id: int, forecast_id: int, name: str) -> bool:
+    """Update forecast name. Returns True if forecast exists."""
+    result = await db.execute(
+        """
+        UPDATE forecast
+        SET name = $2
+        WHERE id = $1 AND account_id = $3
+        """,
+        forecast_id,
+        name,
+        account_id,
+    )
+    return result == "UPDATE 1"

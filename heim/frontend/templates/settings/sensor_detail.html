@@ -1,0 +1,42 @@
+{% extends "settings/layout.html" %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/settings/sensors/">Sensors</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{{ sensor.name or '(unnamed)' }}</li>
+  </ol>
+</nav>
+
+<h2>Edit Sensor</h2>
+<p class="text-body-secondary">Update the details for this sensor.</p>
+
+<div class="row">
+  <div class="col-md-6">
+    <form method="post" action="/settings/sensors/{{ sensor.id }}/">
+      <div class="mb-3">
+        <label for="name" class="form-label">Name</label>
+        <input type="text" class="form-control" id="name" name="name" required value="{{ sensor.name or '' }}">
+        <div class="form-text">A descriptive name for this sensor.</div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Location</label>
+        <input type="text" class="form-control" value="{{ sensor.location_name }}" disabled>
+        <div class="form-text">Location cannot be changed after sensor creation.</div>
+      </div>
+
+      <div class="mb-3 form-check">
+        <input type="checkbox" class="form-check-input" id="is_outdoor" name="is_outdoor" value="true" {% if sensor.is_outdoor %}checked{% endif %}>
+        <label class="form-check-label" for="is_outdoor">Outdoor sensor</label>
+        <div class="form-text">Mark this sensor as outdoor to use it for outdoor temperature readings.</div>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+        <a href="/settings/sensors/" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

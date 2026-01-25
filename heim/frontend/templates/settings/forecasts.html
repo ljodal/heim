@@ -1,0 +1,42 @@
+{% extends "settings/layout.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2>Forecasts</h2>
+</div>
+
+<p class="text-body-secondary">Manage your weather forecasts. Forecasts are created via the CLI.</p>
+
+{% if forecasts %}
+<div class="table-responsive">
+  <table class="table table-hover">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Location</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for forecast_id, name, location_id, location_name in forecasts %}
+      <tr>
+        <td>
+          <a href="/settings/forecasts/{{ forecast_id }}/">{{ name or '(unnamed)' }}</a>
+        </td>
+        <td class="text-body-secondary">{{ location_name }}</td>
+        <td>
+          <a href="/settings/forecasts/{{ forecast_id }}/" class="btn btn-sm btn-outline-secondary">Edit</a>
+          <a href="/{{ location_id }}/" class="btn btn-sm btn-outline-primary">View Dashboard</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="alert alert-info">
+  No forecasts configured yet. Use the CLI to create forecasts:
+  <code class="d-block mt-2">heim yr create --account-id &lt;id&gt; --location-id &lt;id&gt; --name &lt;name&gt;</code>
+</div>
+{% endif %}
+{% endblock %}
