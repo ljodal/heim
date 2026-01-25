@@ -18,7 +18,7 @@ _message_adapter = TypeAdapter(list[Message])
 def _redirect_with_message(url: str, level: str, message: str) -> RedirectResponse:
     """Create a redirect response with a flash message cookie."""
     response = RedirectResponse(url=url, status_code=303)
-    messages = [Message(level=level, message=message)]  # type: ignore[arg-type]
+    messages = [Message(level=level, message=message)]
     response.set_cookie("messages", _message_adapter.dump_json(messages).decode())
     return response
 
