@@ -1,0 +1,40 @@
+{% extends "settings/layout.html" %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/settings/locations/">Locations</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{{ location.name }}</li>
+  </ol>
+</nav>
+
+<h2>Edit Location</h2>
+<p class="text-body-secondary">Update the details for this location.</p>
+
+<div class="row">
+  <div class="col-md-6">
+    <form method="post" action="/settings/locations/{{ location.id }}/">
+      <div class="mb-3">
+        <label for="name" class="form-label">Name</label>
+        <input type="text" class="form-control" id="name" name="name" required value="{{ location.name }}">
+      </div>
+
+      <div class="mb-3">
+        <label for="latitude" class="form-label">Latitude</label>
+        <input type="number" class="form-control" id="latitude" name="latitude" step="0.000001" required value="{{ location.coordinate.latitude }}">
+      </div>
+
+      <div class="mb-3">
+        <label for="longitude" class="form-label">Longitude</label>
+        <input type="number" class="form-control" id="longitude" name="longitude" step="0.000001" required value="{{ location.coordinate.longitude }}">
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+        <a href="/settings/locations/" class="btn btn-outline-secondary">Cancel</a>
+        <a href="/{{ location.id }}/" class="btn btn-outline-primary ms-auto">View Dashboard</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

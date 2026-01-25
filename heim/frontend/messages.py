@@ -11,8 +11,10 @@ from fastapi import Depends, Request, Response
 from pydantic import BaseModel, TypeAdapter
 from starlette.middleware.base import BaseHTTPMiddleware
 
-type Level = Literal["notice", "warning", "error"]
+type Level = Literal["success", "info", "notice", "warning", "error"]
 CSS_CLASS_MAPPING = {
+    "success": "alert alert-success",
+    "info": "alert alert-info",
     "notice": "alert alert-info",
     "warning": "alert alert-warning",
     "error": "alert alert-danger",
@@ -76,6 +78,12 @@ class _Messages:
     def message(self, level: Level, message: str) -> None:
         print(f"Adding message: {message}")
         self.messages.append(Message(level=level, message=message))
+
+    def success(self, message: str) -> None:
+        self.message("success", message)
+
+    def info(self, message: str) -> None:
+        self.message("info", message)
 
     def notice(self, message: str) -> None:
         self.message("notice", message)

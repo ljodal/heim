@@ -1,0 +1,33 @@
+{% extends "settings/layout.html" %}
+
+{% block content %}
+<h2>Settings Overview</h2>
+<p class="text-body-secondary">Manage your home monitoring configuration.</p>
+
+<div class="row mt-4">
+  <!-- Locations Card -->
+  <div class="col-md-6 col-lg-4 mb-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5 class="card-title">Locations</h5>
+        <p class="card-text text-body-secondary">
+          {% if locations %}
+            {{ locations|length }} location{% if locations|length != 1 %}s{% endif %} configured
+          {% else %}
+            No locations configured
+          {% endif %}
+        </p>
+        <ul class="list-unstyled mb-3">
+          {% for location in locations[:3] %}
+            <li class="small">{{ location.name }}</li>
+          {% endfor %}
+          {% if locations|length > 3 %}
+            <li class="small text-body-secondary">and {{ locations|length - 3 }} more...</li>
+          {% endif %}
+        </ul>
+        <a href="/settings/locations/" class="btn btn-outline-primary btn-sm">Manage Locations</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

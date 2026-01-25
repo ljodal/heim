@@ -1,0 +1,44 @@
+{% extends "settings/layout.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2>Locations</h2>
+  <a href="/settings/locations/new/" class="btn btn-primary">Add Location</a>
+</div>
+
+<p class="text-body-secondary">Manage your monitoring locations. Each location can have sensors and weather forecasts.</p>
+
+{% if locations %}
+<div class="table-responsive">
+  <table class="table table-hover">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Coordinates</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for location in locations %}
+      <tr>
+        <td>
+          <a href="/settings/locations/{{ location.id }}/">{{ location.name }}</a>
+        </td>
+        <td class="text-body-secondary">
+          {{ "%.4f"|format(location.coordinate.latitude) }}, {{ "%.4f"|format(location.coordinate.longitude) }}
+        </td>
+        <td>
+          <a href="/settings/locations/{{ location.id }}/" class="btn btn-sm btn-outline-secondary">Edit</a>
+          <a href="/{{ location.id }}/" class="btn btn-sm btn-outline-primary">View Dashboard</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="alert alert-info">
+  No locations configured yet. <a href="/settings/locations/new/">Add your first location</a> to get started.
+</div>
+{% endif %}
+{% endblock %}
