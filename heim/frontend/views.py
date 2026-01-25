@@ -10,7 +10,7 @@ from ..accounts.utils import compare_password, hash_password
 from ..auth.dependencies import CookieSession
 from ..auth.queries import create_session, delete_session
 from ..forecasts.queries import get_forecast, get_instances, get_latest_forecast_values
-from ..sensors.queries import get_measurements, get_sensors
+from ..sensors.queries import get_measurements_averaged, get_sensors
 from ..sensors.types import Attribute
 from .dependencies import CurrentAccount
 from .messages import Messages, get_messages
@@ -92,14 +92,17 @@ async def location_overview(
     except StopIteration as e:
         raise HTTPException(status_code=404, detail="Unknown location") from e
 
-    # Get indoor sensor data for charts
+    # Get indoor sensor data for charts (averaged over 1-hour buckets)
     sensors = await get_sensors(
         account_id=account_id, location_id=location_id, is_outdoor=False
     )
     sensor_data = []
     for sensor_id, sensor_name, sensor_color in sensors:
-        measurements = await get_measurements(
-            sensor_id=sensor_id, attribute=Attribute.AIR_TEMPERATURE, hours=168
+        measurements = await get_measurements_averaged(
+            sensor_id=sensor_id,
+            attribute=Attribute.AIR_TEMPERATURE,
+            hours=168,
+            bucket_minutes=60,
         )
         if measurements:
             sensor_data.append(
@@ -131,11 +134,14 @@ async def location_overview(
     if outdoor_sensors:
         now = datetime.now(UTC)
 
-        # Collect measurements from all outdoor sensors (48h)
+        # Collect outdoor sensor measurements (48h, 15-min buckets)
         all_measurements: list[tuple[datetime, float]] = []
         for sensor_id, _, _ in outdoor_sensors:
-            measurements = await get_measurements(
-                sensor_id=sensor_id, attribute=Attribute.AIR_TEMPERATURE, hours=48
+            measurements = await get_measurements_averaged(
+                sensor_id=sensor_id,
+                attribute=Attribute.AIR_TEMPERATURE,
+                hours=48,
+                bucket_minutes=15,
             )
             all_measurements.extend(measurements)
 

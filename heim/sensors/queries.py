@@ -63,6 +63,52 @@ async def get_measurements(
     return [(row["measured_at"], row["value"]) for row in rows]
 
 
+async def get_measurements_averaged(
+    *,
+    sensor_id: int,
+    attribute: Attribute,
+    hours: int = 24,
+    bucket_minutes: int = 60,
+) -> list[tuple[datetime, float]]:
+    """
+    Get measurements for a sensor within the last N hours, averaged over time buckets.
+    Returns list of (bucket_start, avg_value) tuples.
+    Excludes measurements in any exclusion ranges.
+
+    Args:
+        sensor_id: The sensor to fetch measurements for.
+        attribute: The measurement attribute (e.g., temperature).
+        hours: Number of hours to look back.
+        bucket_minutes: Size of time buckets in minutes for averaging.
+    """
+    since = datetime.now() - timedelta(hours=hours)
+    rows = await db.fetch(
+        """
+        SELECT
+            to_timestamp(
+                floor(extract(epoch from measured_at) / ($4 * 60)) * ($4 * 60)
+            ) AS bucket,
+            avg(value) AS avg_value
+        FROM sensor_measurement m
+        WHERE m.sensor_id = $1
+          AND m.attribute = $2
+          AND m.measured_at > $3
+          AND NOT EXISTS (
+              SELECT 1 FROM sensor_measurement_exclusion e
+              WHERE e.sensor_id = m.sensor_id
+                AND e.excluded @> m.measured_at
+          )
+        GROUP BY bucket
+        ORDER BY bucket ASC
+        """,
+        sensor_id,
+        attribute,
+        since,
+        bucket_minutes,
+    )
+    return [(row["bucket"], row["avg_value"]) for row in rows]
+
+
 async def save_measurements(
     *, sensor_id: int, values: Iterable[tuple[Attribute, datetime, float]]
 ) -> None:
