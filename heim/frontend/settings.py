@@ -218,9 +218,7 @@ async def netatmo_link(
     """Redirect to Netatmo OAuth."""
     client_id = os.getenv("NETATMO_CLIENT_ID")
     if not client_id:
-        raise HTTPException(
-            status_code=500, detail="NETATMO_CLIENT_ID not configured"
-        )
+        raise HTTPException(status_code=500, detail="NETATMO_CLIENT_ID not configured")
 
     redirect_uri = os.getenv(
         "NETATMO_REDIRECT_URI", "http://localhost:8000/api/netatmo/callback"
@@ -271,9 +269,7 @@ async def netatmo_devices(
 
 
 @with_netatmo_client
-async def _get_netatmo_stations(
-    client: NetatmoClient, *, account_id: int
-) -> list[Any]:
+async def _get_netatmo_stations(client: NetatmoClient, *, account_id: int) -> list[Any]:
     """Fetch stations from Netatmo API."""
     data = await client.get_stations_data()
     return data.devices

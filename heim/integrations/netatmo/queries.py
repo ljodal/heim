@@ -40,9 +40,7 @@ async def has_netatmo_account(*, account_id: int) -> bool:
     return row is not None
 
 
-async def get_netatmo_account_info(
-    *, account_id: int
-) -> tuple[int, datetime] | None:
+async def get_netatmo_account_info(*, account_id: int) -> tuple[int, datetime] | None:
     """Get Netatmo account info (id, expires_at) or None if not linked."""
     row = await db.fetchrow(
         "SELECT id, expires_at FROM netatmo_account WHERE account_id = $1",

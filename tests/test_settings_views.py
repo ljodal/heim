@@ -114,9 +114,7 @@ class TestSettingsIndex:
 class TestNetatmoIndex:
     """Tests for the Netatmo settings page."""
 
-    async def test_netatmo_index_requires_auth(
-        self, client: httpx.AsyncClient
-    ) -> None:
+    async def test_netatmo_index_requires_auth(self, client: httpx.AsyncClient) -> None:
         """Unauthenticated users are redirected to login."""
         response = await client.get("/settings/netatmo/", follow_redirects=False)
         assert response.status_code == 303
@@ -318,9 +316,7 @@ class TestNetatmoAddDevice:
         netatmo_account_id: int,
     ) -> None:
         """Successfully adds a device as a sensor."""
-        with patch(
-            "heim.frontend.settings.update_netatmo_sensor_data"
-        ) as mock_task:
+        with patch("heim.frontend.settings.update_netatmo_sensor_data") as mock_task:
             # Mock the task scheduling
             mock_task.return_value.schedule = AsyncMock()
 

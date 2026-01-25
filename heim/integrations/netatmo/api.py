@@ -15,9 +15,7 @@ router = APIRouter(prefix="/netatmo", tags=["netatmo"])
 _message_adapter = TypeAdapter(list[Message])
 
 
-def _redirect_with_message(
-    url: str, level: str, message: str
-) -> RedirectResponse:
+def _redirect_with_message(url: str, level: str, message: str) -> RedirectResponse:
     """Create a redirect response with a flash message cookie."""
     response = RedirectResponse(url=url, status_code=303)
     messages = [Message(level=level, message=message)]  # type: ignore[arg-type]
