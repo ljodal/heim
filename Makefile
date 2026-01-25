@@ -1,4 +1,4 @@
-all: lint typecheck
+all: lint typecheck test
 
 .PHONY: lint
 lint:
@@ -14,3 +14,7 @@ typecheck:
 fix:
 	ruff check --fix heim tests
 	ruff format heim tests
+
+.PHONY: test
+test:
+	pytest

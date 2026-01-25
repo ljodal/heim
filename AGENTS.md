@@ -131,4 +131,27 @@ uv run mypy                  # Type checking (with strict mode)
 uv run ty check heim         # Fast type checking (Astral's ty)
 make lint                    # Run ruff checks
 make typecheck               # Run both mypy and ty
+make                         # Run all checks (lint + typecheck + test)
 ```
+
+## Agent Instructions
+
+**Before pushing any code, you MUST run `make` and ensure all checks pass:**
+
+```bash
+make                         # Runs: lint, typecheck, test
+```
+
+This runs:
+1. `ruff check` - Lint checking
+2. `ruff format --check` - Format verification
+3. `mypy` - Strict type checking
+4. `ty check` - Fast type checking
+5. `pytest` - All tests
+
+If any check fails:
+1. Run `make fix` to auto-fix formatting and lint issues
+2. Fix any remaining type errors manually
+3. Fix any failing tests
+4. Re-run `make` to verify all checks pass
+5. Only then commit and push
