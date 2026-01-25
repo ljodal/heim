@@ -6,13 +6,14 @@ from datetime import datetime, timedelta
 
 import pytest
 from heim.local_forecast.queries import (
+    DEFAULT_ALPHA,
     get_bias_stats,
     get_forecast_and_sensor_for_location,
     get_latest_forecast_values,
     get_paired_observations,
     upsert_bias_stats,
 )
-from heim.local_forecast.stats import WelfordState
+from heim.local_forecast.stats import BiasBucket, EWMAState, Season, TimeOfDay
 from heim.sensors.types import Attribute
 
 
@@ -100,16 +101,22 @@ async def test_upsert_and_get_bias_stats(
     forecast_id: int,
 ) -> None:
     # Create initial stats
-    state = WelfordState()
+    state = EWMAState(alpha=DEFAULT_ALPHA)
     state.update(50.0)  # Error of 50 (0.5°C bias)
     state.update(60.0)
+
+    bucket = BiasBucket(
+        lead_time=0,
+        season=Season.WINTER,
+        time_of_day=TimeOfDay.MORNING,
+    )
 
     await upsert_bias_stats(
         location_id=location_id,
         sensor_id=sensor_id,
         forecast_id=forecast_id,
         attribute=Attribute.AIR_TEMPERATURE,
-        lead_time_bucket=0,
+        bucket=bucket,
         state=state,
     )
 
@@ -120,20 +127,27 @@ async def test_upsert_and_get_bias_stats(
         attribute=Attribute.AIR_TEMPERATURE,
     )
 
-    assert 0 in stats
-    assert stats[0].count == 2
-    assert stats[0].mean == 55.0
+    bucket_key = bucket.to_db_key()
+    assert bucket_key in stats
+    assert stats[bucket_key].count == 2
 
 
 @pytest.mark.asyncio
-async def test_upsert_merges_stats(
+async def test_upsert_replaces_stats(
     connection: None,
     location_id: int,
     sensor_id: int,
     forecast_id: int,
 ) -> None:
-    # Insert first batch
-    state1 = WelfordState()
+    """With EWMA, upsert replaces rather than merges stats."""
+    bucket = BiasBucket(
+        lead_time=0,
+        season=Season.WINTER,
+        time_of_day=TimeOfDay.MORNING,
+    )
+
+    # Insert first state
+    state1 = EWMAState(alpha=DEFAULT_ALPHA)
     state1.update(50.0)
     state1.update(60.0)
 
@@ -142,31 +156,30 @@ async def test_upsert_merges_stats(
         sensor_id=sensor_id,
         forecast_id=forecast_id,
         attribute=Attribute.AIR_TEMPERATURE,
-        lead_time_bucket=0,
+        bucket=bucket,
         state=state1,
     )
 
-    # Insert second batch (should merge)
-    state2 = WelfordState()
-    state2.update(40.0)
-    state2.update(50.0)
+    # Insert second state (replaces first)
+    state2 = EWMAState(alpha=DEFAULT_ALPHA)
+    state2.update(100.0)
 
     await upsert_bias_stats(
         location_id=location_id,
         sensor_id=sensor_id,
         forecast_id=forecast_id,
         attribute=Attribute.AIR_TEMPERATURE,
-        lead_time_bucket=0,
+        bucket=bucket,
         state=state2,
     )
 
-    # Check merged stats
+    # Check stats - should be the second state, not merged
     stats = await get_bias_stats(
         location_id=location_id,
         forecast_id=forecast_id,
         attribute=Attribute.AIR_TEMPERATURE,
     )
 
-    assert stats[0].count == 4
-    # Mean of [50, 60, 40, 50] = 50
-    assert stats[0].mean == 50.0
+    bucket_key = bucket.to_db_key()
+    assert stats[bucket_key].count == 1
+    assert stats[bucket_key].mean == 100.0

@@ -1,12 +1,20 @@
 """
-Tests for Welford's algorithm and statistics utilities.
+Tests for statistics utilities.
 """
 
 import math
+from datetime import datetime
 
 from heim.local_forecast.stats import (
+    BiasBucket,
+    EWMAState,
+    Season,
+    TimeOfDay,
     WelfordState,
     get_lead_time_bucket,
+    get_season,
+    get_time_of_day,
+    half_life_to_alpha,
     prediction_interval,
 )
 
@@ -95,6 +103,70 @@ class TestWelfordState:
         assert math.isclose(merged.m2, sequential.m2, rel_tol=1e-9)
 
 
+class TestEWMAState:
+    def test_empty_state(self) -> None:
+        state = EWMAState(alpha=0.1)
+        assert state.count == 0
+        assert state.mean == 0.0
+        assert state.variance == 0.0
+        assert state.std_dev == 0.0
+
+    def test_single_value(self) -> None:
+        state = EWMAState(alpha=0.1)
+        state.update(10.0)
+        assert state.count == 1
+        assert state.mean == 10.0
+        assert state.variance == 0.0
+
+    def test_two_values(self) -> None:
+        state = EWMAState(alpha=0.5)  # High alpha for clear effect
+        state.update(10.0)
+        state.update(20.0)
+        assert state.count == 2
+        # With alpha=0.5: new_mean = 10 + 0.5 * (20 - 10) = 15
+        assert state.mean == 15.0
+
+    def test_decay_effect(self) -> None:
+        """Test that older values have less weight."""
+        # With high alpha, recent values dominate
+        state_high = EWMAState(alpha=0.9)
+        for v in [0.0, 0.0, 0.0, 100.0]:
+            state_high.update(v)
+
+        # With low alpha, older values have more weight
+        state_low = EWMAState(alpha=0.1)
+        for v in [0.0, 0.0, 0.0, 100.0]:
+            state_low.update(v)
+
+        # High alpha should be closer to 100 (recent value)
+        assert state_high.mean > state_low.mean
+
+    def test_effective_n(self) -> None:
+        state = EWMAState(alpha=0.1)
+        for i in range(100):
+            state.update(float(i))
+
+        # Effective N should be around 2/alpha - 1 = 19
+        assert 15 < state.effective_n < 25
+
+
+class TestHalfLifeToAlpha:
+    def test_half_life_10(self) -> None:
+        alpha = half_life_to_alpha(10)
+        # After 10 observations, weight should be ~0.5
+        # alpha ≈ 0.067
+        assert 0.05 < alpha < 0.08
+
+    def test_half_life_1(self) -> None:
+        alpha = half_life_to_alpha(1)
+        # Very fast decay
+        assert alpha > 0.5
+
+    def test_half_life_zero(self) -> None:
+        alpha = half_life_to_alpha(0)
+        assert alpha == 1.0
+
+
 class TestLeadTimeBucket:
     def test_bucket_0_to_6(self) -> None:
         assert get_lead_time_bucket(0) == 0
@@ -120,6 +192,94 @@ class TestLeadTimeBucket:
         assert get_lead_time_bucket(48) == 48
         assert get_lead_time_bucket(72) == 48
         assert get_lead_time_bucket(168) == 48  # 1 week
+
+
+class TestSeason:
+    def test_winter(self) -> None:
+        assert get_season(datetime(2024, 12, 15)) == Season.WINTER
+        assert get_season(datetime(2024, 1, 15)) == Season.WINTER
+        assert get_season(datetime(2024, 2, 15)) == Season.WINTER
+
+    def test_spring(self) -> None:
+        assert get_season(datetime(2024, 3, 15)) == Season.SPRING
+        assert get_season(datetime(2024, 4, 15)) == Season.SPRING
+        assert get_season(datetime(2024, 5, 15)) == Season.SPRING
+
+    def test_summer(self) -> None:
+        assert get_season(datetime(2024, 6, 15)) == Season.SUMMER
+        assert get_season(datetime(2024, 7, 15)) == Season.SUMMER
+        assert get_season(datetime(2024, 8, 15)) == Season.SUMMER
+
+    def test_fall(self) -> None:
+        assert get_season(datetime(2024, 9, 15)) == Season.FALL
+        assert get_season(datetime(2024, 10, 15)) == Season.FALL
+        assert get_season(datetime(2024, 11, 15)) == Season.FALL
+
+
+class TestTimeOfDay:
+    def test_night(self) -> None:
+        assert get_time_of_day(datetime(2024, 1, 1, 0, 0)) == TimeOfDay.NIGHT
+        assert get_time_of_day(datetime(2024, 1, 1, 3, 0)) == TimeOfDay.NIGHT
+        assert get_time_of_day(datetime(2024, 1, 1, 5, 59)) == TimeOfDay.NIGHT
+
+    def test_morning(self) -> None:
+        assert get_time_of_day(datetime(2024, 1, 1, 6, 0)) == TimeOfDay.MORNING
+        assert get_time_of_day(datetime(2024, 1, 1, 9, 0)) == TimeOfDay.MORNING
+        assert get_time_of_day(datetime(2024, 1, 1, 11, 59)) == TimeOfDay.MORNING
+
+    def test_afternoon(self) -> None:
+        assert get_time_of_day(datetime(2024, 1, 1, 12, 0)) == TimeOfDay.AFTERNOON
+        assert get_time_of_day(datetime(2024, 1, 1, 15, 0)) == TimeOfDay.AFTERNOON
+        assert get_time_of_day(datetime(2024, 1, 1, 17, 59)) == TimeOfDay.AFTERNOON
+
+    def test_evening(self) -> None:
+        assert get_time_of_day(datetime(2024, 1, 1, 18, 0)) == TimeOfDay.EVENING
+        assert get_time_of_day(datetime(2024, 1, 1, 21, 0)) == TimeOfDay.EVENING
+        assert get_time_of_day(datetime(2024, 1, 1, 23, 59)) == TimeOfDay.EVENING
+
+
+class TestBiasBucket:
+    def test_from_timestamps(self) -> None:
+        forecast_time = datetime(2024, 7, 15, 10, 0)  # Summer morning
+        target_time = datetime(2024, 7, 15, 14, 0)  # Summer afternoon, 4h lead
+
+        bucket = BiasBucket.from_timestamps(forecast_time, target_time)
+
+        assert bucket.lead_time == 0  # 0-6h bucket
+        assert bucket.season == Season.SUMMER
+        assert bucket.time_of_day == TimeOfDay.AFTERNOON
+
+    def test_db_key_roundtrip(self) -> None:
+        original = BiasBucket(
+            lead_time=12,
+            season=Season.WINTER,
+            time_of_day=TimeOfDay.EVENING,
+        )
+
+        key = original.to_db_key()
+        restored = BiasBucket.from_db_key(key)
+
+        assert restored.lead_time == original.lead_time
+        assert restored.season == original.season
+        assert restored.time_of_day == original.time_of_day
+
+    def test_all_bucket_combinations(self) -> None:
+        """Test that all bucket combinations have unique keys."""
+        keys = set()
+        for lead_time in [0, 6, 12, 24, 48]:
+            for season in Season:
+                for time_of_day in TimeOfDay:
+                    bucket = BiasBucket(
+                        lead_time=lead_time,
+                        season=season,
+                        time_of_day=time_of_day,
+                    )
+                    key = bucket.to_db_key()
+                    assert key not in keys, f"Duplicate key: {key}"
+                    keys.add(key)
+
+        # 5 lead times * 4 seasons * 4 times of day = 80 unique buckets
+        assert len(keys) == 80
 
 
 class TestPredictionInterval:

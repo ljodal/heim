@@ -7,24 +7,27 @@ from datetime import datetime
 from pydantic import BaseModel
 
 from ..sensors.types import Attribute
-from .stats import Z_SCORES
+from .stats import Z_SCORES, Season, TimeOfDay
 
 
 class BiasStats(BaseModel):
-    """Statistics for a single lead time bucket."""
+    """Statistics for a single bucket."""
 
-    lead_time_bucket: int
+    bucket: int  # Encoded bucket key
+    lead_time: int  # Lead time bucket (0, 6, 12, 24, 48)
+    season: Season
+    time_of_day: TimeOfDay
     count: int
-    mean: float
-    m2: float
+    mean: float  # Mean bias (forecast - observed)
+    var: float  # Variance
     last_updated: datetime
 
     @property
     def std_dev(self) -> float:
         """Standard deviation of errors."""
-        if self.count < 1:
+        if self.var < 0:
             return 0.0
-        return (self.m2 / self.count) ** 0.5
+        return self.var**0.5
 
 
 class AdjustedForecastValue(BaseModel):
@@ -35,7 +38,7 @@ class AdjustedForecastValue(BaseModel):
     adjusted_value: int  # Bias-corrected value (100x scaled)
     std_error: float  # Standard deviation of errors (100x scaled)
     lead_time_hours: float
-    lead_time_bucket: int
+    bucket: int  # Encoded bucket key
     sample_count: int  # Number of samples used for this bucket
 
     @property

@@ -4,14 +4,16 @@ API endpoints for local forecast adjustments.
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
+from .. import db
 from ..auth.dependencies import current_account
 from ..sensors.types import Attribute
 from .queries import (
+    DEFAULT_ALPHA,
     get_bias_stats,
     get_forecast_and_sensor_for_location,
     get_latest_forecast_values,
 )
-from .stats import WelfordState, get_lead_time_bucket
+from .stats import BiasBucket, EWMAState
 from .types import AdjustedForecast, AdjustedForecastValue, BiasStats
 
 router = APIRouter()
@@ -31,8 +33,8 @@ async def get_adjusted_forecast(
     Get a bias-corrected forecast for a location.
 
     The adjustment is based on historical comparison of yr.no forecasts
-    with local sensor observations. Returns the adjusted values along
-    with uncertainty bounds.
+    with local sensor observations, using exponentially weighted statistics.
+    Bias is tracked separately by lead time, season, and time of day.
     """
 
     # Get forecast and sensor for this location
@@ -74,12 +76,15 @@ async def get_adjusted_forecast(
     adjusted_values: list[AdjustedForecastValue] = []
 
     for measured_at, raw_value in forecast_values:
+        # Determine the bucket for this forecast point
+        bucket = BiasBucket.from_timestamps(created_at, measured_at)
+        bucket_key = bucket.to_db_key()
+
         # Calculate lead time in hours
         lead_time_hours = (measured_at - created_at).total_seconds() / 3600
-        bucket = get_lead_time_bucket(lead_time_hours)
 
         # Get stats for this bucket, or use defaults
-        stats = bias_stats.get(bucket, WelfordState())
+        stats = bias_stats.get(bucket_key, EWMAState(alpha=DEFAULT_ALPHA))
 
         # Apply bias correction: adjusted = raw - mean_error
         adjusted_value = round(raw_value - stats.mean)
@@ -92,7 +97,7 @@ async def get_adjusted_forecast(
                 adjusted_value=adjusted_value,
                 std_error=std_error,
                 lead_time_hours=lead_time_hours,
-                lead_time_bucket=bucket,
+                bucket=bucket_key,
                 sample_count=stats.count,
             )
         )
@@ -120,8 +125,8 @@ async def get_forecast_bias(
     """
     Get the bias statistics for a location.
 
-    Returns the current statistics for each lead time bucket, showing
-    how much the forecast typically differs from observed values.
+    Returns the current statistics for each bucket (lead time + season + time of day),
+    showing how much the forecast typically differs from observed values.
     """
 
     # Get forecast for this location
@@ -139,27 +144,32 @@ async def get_forecast_bias(
     forecast_id, _ = result
 
     # Get bias statistics
-    from .. import db
-
     rows = await db.fetch(
         """
-        SELECT lead_time_bucket, count, mean, m2, last_updated
+        SELECT bucket, count, mean, var, last_updated
         FROM forecast_bias_stats
         WHERE location_id = $1 AND forecast_id = $2 AND attribute = $3
-        ORDER BY lead_time_bucket
+        ORDER BY bucket
         """,
         location_id,
         forecast_id,
         attribute,
     )
 
-    return [
-        BiasStats(
-            lead_time_bucket=row["lead_time_bucket"],
-            count=row["count"],
-            mean=row["mean"],
-            m2=row["m2"],
-            last_updated=row["last_updated"],
+    stats_list = []
+    for row in rows:
+        bucket = BiasBucket.from_db_key(row["bucket"])
+        stats_list.append(
+            BiasStats(
+                bucket=row["bucket"],
+                lead_time=bucket.lead_time,
+                season=bucket.season,
+                time_of_day=bucket.time_of_day,
+                count=row["count"],
+                mean=row["mean"],
+                var=row["var"],
+                last_updated=row["last_updated"],
+            )
         )
-        for row in rows
-    ]
+
+    return stats_list

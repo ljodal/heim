@@ -6,7 +6,11 @@ from datetime import datetime
 
 from .. import db
 from ..sensors.types import Attribute
-from .stats import WelfordState
+from .stats import BiasBucket, EWMAState
+
+# Default EWMA alpha (decay factor). With alpha=0.05, half-life is ~14 observations.
+# If we get ~4 observations per day per bucket, this gives ~3.5 day half-life.
+DEFAULT_ALPHA = 0.05
 
 
 async def get_bias_stats(
@@ -14,16 +18,16 @@ async def get_bias_stats(
     location_id: int,
     forecast_id: int,
     attribute: Attribute,
-) -> dict[int, WelfordState]:
+) -> dict[int, EWMAState]:
     """
-    Get bias statistics for all lead time buckets.
+    Get bias statistics for all buckets.
 
-    Returns a dict mapping lead_time_bucket -> WelfordState.
+    Returns a dict mapping bucket_key -> EWMAState.
     """
 
     rows = await db.fetch(
         """
-        SELECT lead_time_bucket, count, mean, m2
+        SELECT bucket, count, mean, var
         FROM forecast_bias_stats
         WHERE location_id = $1 AND forecast_id = $2 AND attribute = $3
         """,
@@ -33,10 +37,11 @@ async def get_bias_stats(
     )
 
     return {
-        row["lead_time_bucket"]: WelfordState(
+        row["bucket"]: EWMAState(
+            alpha=DEFAULT_ALPHA,
             count=row["count"],
             mean=row["mean"],
-            m2=row["m2"],
+            var=row["var"],
         )
         for row in rows
     }
@@ -48,44 +53,39 @@ async def upsert_bias_stats(
     sensor_id: int,
     forecast_id: int,
     attribute: Attribute,
-    lead_time_bucket: int,
-    state: WelfordState,
+    bucket: BiasBucket,
+    state: EWMAState,
 ) -> None:
     """
     Insert or update bias statistics for a specific bucket.
 
-    Uses Welford's merge algorithm to combine with existing stats.
+    For EWMA, we simply replace the old state with the new one
+    (the exponential weighting is applied during the update phase).
     """
+
+    bucket_key = bucket.to_db_key()
 
     await db.execute(
         """
         INSERT INTO forecast_bias_stats (
             location_id, sensor_id, forecast_id, attribute,
-            lead_time_bucket, count, mean, m2, last_updated
+            bucket, count, mean, var, last_updated
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, now())
-        ON CONFLICT (location_id, sensor_id, forecast_id, attribute, lead_time_bucket)
+        ON CONFLICT (location_id, sensor_id, forecast_id, attribute, bucket)
         DO UPDATE SET
-            count = forecast_bias_stats.count + EXCLUDED.count,
-            mean = forecast_bias_stats.mean + (
-                (EXCLUDED.mean - forecast_bias_stats.mean) * EXCLUDED.count
-                / (forecast_bias_stats.count + EXCLUDED.count)
-            ),
-            m2 = forecast_bias_stats.m2 + EXCLUDED.m2 + (
-                (EXCLUDED.mean - forecast_bias_stats.mean)
-                * (EXCLUDED.mean - forecast_bias_stats.mean)
-                * forecast_bias_stats.count * EXCLUDED.count
-                / (forecast_bias_stats.count + EXCLUDED.count)
-            ),
+            count = EXCLUDED.count,
+            mean = EXCLUDED.mean,
+            var = EXCLUDED.var,
             last_updated = now()
         """,
         location_id,
         sensor_id,
         forecast_id,
         attribute,
-        lead_time_bucket,
+        bucket_key,
         state.count,
         state.mean,
-        state.m2,
+        state.var,
     )
 
 
@@ -239,3 +239,36 @@ async def get_last_processed_time(
         forecast_id,
         attribute,
     )
+
+
+async def get_existing_stats(
+    *,
+    location_id: int,
+    forecast_id: int,
+    attribute: Attribute,
+) -> dict[int, EWMAState]:
+    """
+    Get all existing EWMA states for a location/forecast/attribute.
+
+    Returns a dict mapping bucket_key -> EWMAState.
+    """
+    rows = await db.fetch(
+        """
+        SELECT bucket, count, mean, var
+        FROM forecast_bias_stats
+        WHERE location_id = $1 AND forecast_id = $2 AND attribute = $3
+        """,
+        location_id,
+        forecast_id,
+        attribute,
+    )
+
+    return {
+        row["bucket"]: EWMAState(
+            alpha=DEFAULT_ALPHA,
+            count=row["count"],
+            mean=row["mean"],
+            var=row["var"],
+        )
+        for row in rows
+    }
