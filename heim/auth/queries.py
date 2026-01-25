@@ -45,4 +45,4 @@ async def delete_session(session: Session) -> None:
     Delete a session
     """
 
-    await db.execute("DELETE fROM session WHERE key = $1", session.key)
+    await db.execute("DELETE FROM session WHERE key = $1", session.key)
