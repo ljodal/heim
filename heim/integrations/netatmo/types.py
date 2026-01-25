@@ -14,7 +14,7 @@ class TokenResponse(BaseModel):
 
     @field_validator("scope", mode="before")
     @classmethod
-    def parse_scope(cls, v: Any) -> list[str] | None:
+    def parse_scope(cls, v: Any) -> Any:
         if isinstance(v, str):
             return v.split() if v else None
         return v

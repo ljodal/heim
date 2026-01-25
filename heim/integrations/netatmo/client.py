@@ -237,7 +237,7 @@ class NetatmoClient:
 
     async def _api_request(
         self, endpoint: str, *, params: dict[str, str] | None = None
-    ) -> dict[str, Any]:
+    ) -> Any:
         """
         Make an authenticated API request.
         """

@@ -88,12 +88,12 @@ async def create_netatmo_sensor(
     netatmo_id: str,
     station_id: str,
 ) -> int:
-    netatmo_account_id: int = await db.fetchval(  # type: ignore[assignment]
+    netatmo_account_id: int = await db.fetchval(
         "SELECT id FROM netatmo_account WHERE account_id = $1",
         account_id,
     )
 
-    sensor_id: int = await db.fetchval(  # type: ignore[assignment]
+    sensor_id: int = await db.fetchval(
         """
         INSERT INTO sensor (account_id, location_id, name)
         VALUES ($1, $2, $3)

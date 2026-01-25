@@ -9,8 +9,9 @@ from .exceptions import InvalidGrant, NetatmoAPIError
 from .queries import create_netatmo_account
 
 router = APIRouter(prefix="/netatmo", tags=["netatmo"])
-templates = Jinja2Templates(directory="heim/frontend/templates")
-templates.env.loader.searchpath.append("heim/integrations/netatmo/templates")
+templates = Jinja2Templates(
+    directory=["heim/frontend/templates", "heim/integrations/netatmo/templates"]
+)
 
 
 @router.get("/callback", response_class=HTMLResponse)
