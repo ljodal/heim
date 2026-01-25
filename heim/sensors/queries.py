@@ -156,3 +156,89 @@ async def remove_exclusion(*, account_id: int, exclusion_id: int) -> bool:
         account_id,
     )
     return result == "DELETE 1"
+
+
+async def get_all_sensors(
+    *, account_id: int
+) -> list[tuple[int, str | None, str | None, bool, str | None]]:
+    """
+    Get all sensors for an account with their details.
+    Returns list of (id, name, location_name, is_outdoor, source) tuples.
+    Source is 'netatmo', 'aqara', or None for sensors without integration link.
+    """
+    rows = await db.fetch(
+        """
+        SELECT
+            s.id,
+            s.name,
+            l.name as location_name,
+            COALESCE(s.is_outdoor, false) as is_outdoor,
+            CASE
+                WHEN ns.sensor_id IS NOT NULL THEN 'netatmo'
+                WHEN aq.sensor_id IS NOT NULL THEN 'aqara'
+                ELSE NULL
+            END as source
+        FROM sensor s
+        JOIN location l ON l.id = s.location_id
+        LEFT JOIN netatmo_sensor ns ON ns.sensor_id = s.id
+        LEFT JOIN aqara_sensor aq ON aq.sensor_id = s.id
+        WHERE s.account_id = $1
+        ORDER BY l.name, s.name
+        """,
+        account_id,
+    )
+    return [
+        (row["id"], row["name"], row["location_name"], row["is_outdoor"], row["source"])
+        for row in rows
+    ]
+
+
+async def get_sensor(
+    *, account_id: int, sensor_id: int
+) -> tuple[int, str | None, int, str | None, bool] | None:
+    """
+    Get a single sensor by ID.
+    Returns (id, name, location_id, location_name, is_outdoor) or None.
+    """
+    row = await db.fetchrow(
+        """
+        SELECT
+            s.id,
+            s.name,
+            s.location_id,
+            l.name as location_name,
+            COALESCE(s.is_outdoor, false) as is_outdoor
+        FROM sensor s
+        JOIN location l ON l.id = s.location_id
+        WHERE s.id = $1 AND s.account_id = $2
+        """,
+        sensor_id,
+        account_id,
+    )
+    if not row:
+        return None
+    return (
+        row["id"],
+        row["name"],
+        row["location_id"],
+        row["location_name"],
+        row["is_outdoor"],
+    )
+
+
+async def update_sensor(
+    *, account_id: int, sensor_id: int, name: str, is_outdoor: bool
+) -> bool:
+    """Update sensor name and is_outdoor flag. Returns True if sensor exists."""
+    result = await db.execute(
+        """
+        UPDATE sensor
+        SET name = $2, is_outdoor = $3
+        WHERE id = $1 AND account_id = $4
+        """,
+        sensor_id,
+        name,
+        is_outdoor,
+        account_id,
+    )
+    return result == "UPDATE 1"

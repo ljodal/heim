@@ -17,6 +17,11 @@ from ..accounts.queries import (
     get_locations,
     update_location,
 )
+from ..forecasts.queries import (
+    get_all_forecasts,
+    get_forecast_by_id,
+    update_forecast,
+)
 from ..integrations.netatmo.client import NetatmoClient
 from ..integrations.netatmo.queries import (
     create_netatmo_sensor,
@@ -28,6 +33,11 @@ from ..integrations.netatmo.queries import (
 from ..integrations.netatmo.services import with_netatmo_client
 from ..integrations.netatmo.tasks import (
     update_sensor_data as update_netatmo_sensor_data,
+)
+from ..sensors.queries import (
+    get_all_sensors,
+    get_sensor,
+    update_sensor,
 )
 from .dependencies import CurrentAccount
 from .messages import Messages, get_messages
@@ -308,4 +318,143 @@ async def netatmo_add_device(
 
     return RedirectResponse(
         url="/settings/netatmo/", status_code=status.HTTP_303_SEE_OTHER
+    )
+
+
+###################
+# Sensor Settings #
+###################
+
+
+@router.get("/sensors/", response_class=HTMLResponse)
+async def sensors_list(
+    request: Request,
+    account_id: CurrentAccount,
+) -> Response:
+    """List and manage sensors."""
+    sensors = await get_all_sensors(account_id=account_id)
+
+    context = {
+        "request": request,
+        "sensors": sensors,
+        "active_tab": "sensors",
+    }
+    return templates.TemplateResponse("settings/sensors.html", context)
+
+
+@router.get("/sensors/{sensor_id}/", response_class=HTMLResponse)
+async def sensor_detail(
+    request: Request,
+    account_id: CurrentAccount,
+    sensor_id: Annotated[int, Path()],
+) -> Response:
+    """View sensor details."""
+    sensor_data = await get_sensor(account_id=account_id, sensor_id=sensor_id)
+    if sensor_data is None:
+        raise HTTPException(status_code=404, detail="Sensor not found")
+
+    sensor = {
+        "id": sensor_data[0],
+        "name": sensor_data[1],
+        "location_id": sensor_data[2],
+        "location_name": sensor_data[3],
+        "is_outdoor": sensor_data[4],
+    }
+
+    context = {
+        "request": request,
+        "sensor": sensor,
+        "active_tab": "sensors",
+    }
+    return templates.TemplateResponse("settings/sensor_detail.html", context)
+
+
+@router.post("/sensors/{sensor_id}/", response_class=RedirectResponse)
+async def sensor_update_view(
+    request: Request,
+    account_id: CurrentAccount,
+    messages: Messages,
+    sensor_id: Annotated[int, Path()],
+    name: Annotated[str, Form()],
+    is_outdoor: Annotated[str | None, Form()] = None,
+) -> RedirectResponse:
+    """Update a sensor."""
+    await update_sensor(
+        account_id=account_id,
+        sensor_id=sensor_id,
+        name=name,
+        is_outdoor=is_outdoor == "true",
+    )
+    messages.success(f"Sensor '{name}' updated successfully!")
+    return RedirectResponse(
+        url="/settings/sensors/", status_code=status.HTTP_303_SEE_OTHER
+    )
+
+
+#####################
+# Forecast Settings #
+#####################
+
+
+@router.get("/forecasts/", response_class=HTMLResponse)
+async def forecasts_list(
+    request: Request,
+    account_id: CurrentAccount,
+) -> Response:
+    """List and manage forecasts."""
+    forecasts = await get_all_forecasts(account_id=account_id)
+
+    context = {
+        "request": request,
+        "forecasts": forecasts,
+        "active_tab": "forecasts",
+    }
+    return templates.TemplateResponse("settings/forecasts.html", context)
+
+
+@router.get("/forecasts/{forecast_id}/", response_class=HTMLResponse)
+async def forecast_detail(
+    request: Request,
+    account_id: CurrentAccount,
+    forecast_id: Annotated[int, Path()],
+) -> Response:
+    """View forecast details."""
+    forecast_data = await get_forecast_by_id(
+        account_id=account_id, forecast_id=forecast_id
+    )
+    if forecast_data is None:
+        raise HTTPException(status_code=404, detail="Forecast not found")
+
+    forecast = {
+        "id": forecast_data[0],
+        "name": forecast_data[1],
+        "location_id": forecast_data[2],
+        "location_name": forecast_data[3],
+    }
+
+    context = {
+        "request": request,
+        "forecast": forecast,
+        "active_tab": "forecasts",
+    }
+    return templates.TemplateResponse("settings/forecast_detail.html", context)
+
+
+@router.post("/forecasts/{forecast_id}/", response_class=RedirectResponse)
+async def forecast_update_view(
+    request: Request,
+    account_id: CurrentAccount,
+    messages: Messages,
+    forecast_id: Annotated[int, Path()],
+    name: Annotated[str, Form()],
+) -> RedirectResponse:
+    """Update a forecast."""
+    await update_forecast(
+        account_id=account_id,
+        forecast_id=forecast_id,
+        name=name,
+    )
+    messages.success(f"Forecast '{name}' updated successfully!")
+    return RedirectResponse(
+        url="/settings/forecasts/", status_code=status.HTTP_303_SEE_OTHER
     )
