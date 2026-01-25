@@ -230,9 +230,7 @@ async def netatmo_link(
     if not client_id:
         raise HTTPException(status_code=500, detail="NETATMO_CLIENT_ID not configured")
 
-    redirect_uri = os.getenv(
-        "NETATMO_REDIRECT_URI", "http://localhost:8000/api/netatmo/callback"
-    )
+    redirect_uri = str(request.url_for("oauth_callback"))
 
     params = {
         "client_id": client_id,
