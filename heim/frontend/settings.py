@@ -357,6 +357,7 @@ async def sensor_detail(
         "location_id": sensor_data[2],
         "location_name": sensor_data[3],
         "is_outdoor": sensor_data[4],
+        "color": sensor_data[5],
     }
 
     context = {
@@ -375,6 +376,7 @@ async def sensor_update_view(
     sensor_id: Annotated[int, Path()],
     name: Annotated[str, Form()],
     is_outdoor: Annotated[str | None, Form()] = None,
+    color: Annotated[str | None, Form()] = None,
 ) -> RedirectResponse:
     """Update a sensor."""
     await update_sensor(
@@ -382,6 +384,7 @@ async def sensor_update_view(
         sensor_id=sensor_id,
         name=name,
         is_outdoor=is_outdoor == "true",
+        color=color,
     )
     messages.success(f"Sensor '{name}' updated successfully!")
     return RedirectResponse(

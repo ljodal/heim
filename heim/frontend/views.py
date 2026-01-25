@@ -98,7 +98,7 @@ async def location_overview(
         account_id=account_id, location_id=location_id, is_outdoor=False
     )
     sensor_data = []
-    for sensor_id, sensor_name in sensors:
+    for sensor_id, sensor_name, sensor_color in sensors:
         measurements = await get_measurements(
             sensor_id=sensor_id, attribute=Attribute.AIR_TEMPERATURE, hours=168
         )
@@ -107,6 +107,7 @@ async def location_overview(
                 {
                     "id": sensor_id,
                     "name": sensor_name or f"Sensor {sensor_id}",
+                    "color": sensor_color,
                     "labels": [m[0].isoformat() for m in measurements],
                     "values": [m[1] / 100 for m in measurements],
                 }
@@ -133,7 +134,7 @@ async def location_overview(
 
         # Collect measurements from all outdoor sensors (48h)
         all_measurements: list[tuple[datetime, float]] = []
-        for sensor_id, _ in outdoor_sensors:
+        for sensor_id, _, _ in outdoor_sensors:
             measurements = await get_measurements(
                 sensor_id=sensor_id, attribute=Attribute.AIR_TEMPERATURE, hours=48
             )

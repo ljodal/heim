@@ -7,9 +7,9 @@ from .types import Attribute
 
 async def get_sensors(
     *, account_id: int, location_id: int, is_outdoor: bool | None = None
-) -> list[tuple[int, str | None]]:
+) -> list[tuple[int, str | None, str | None]]:
     """
-    Get sensors for a location. Returns list of (id, name) tuples.
+    Get sensors for a location. Returns list of (id, name, color) tuples.
 
     Args:
         is_outdoor: If True, only outdoor sensors. If False, only indoor.
@@ -17,20 +17,20 @@ async def get_sensors(
     """
     if is_outdoor is None:
         query = """
-            SELECT id, name
+            SELECT id, name, color
             FROM sensor
             WHERE location_id = $1 AND account_id = $2
         """
         rows = await db.fetch(query, location_id, account_id)
     else:
         query = """
-            SELECT id, name
+            SELECT id, name, color
             FROM sensor
             WHERE location_id = $1 AND account_id = $2
               AND COALESCE(is_outdoor, false) = $3
         """
         rows = await db.fetch(query, location_id, account_id, is_outdoor)
-    return [(row["id"], row["name"]) for row in rows]
+    return [(row["id"], row["name"], row["color"]) for row in rows]
 
 
 async def get_measurements(
@@ -154,10 +154,10 @@ async def remove_exclusion(*, account_id: int, exclusion_id: int) -> bool:
 
 async def get_all_sensors(
     *, account_id: int
-) -> list[tuple[int, str | None, str | None, bool, str | None]]:
+) -> list[tuple[int, str | None, str | None, bool, str | None, str | None]]:
     """
     Get all sensors for an account with their details.
-    Returns list of (id, name, location_name, is_outdoor, source) tuples.
+    Returns list of (id, name, location_name, is_outdoor, source, color) tuples.
     Source is 'netatmo', 'aqara', or None for sensors without integration link.
     """
     rows = await db.fetch(
@@ -171,7 +171,8 @@ async def get_all_sensors(
                 WHEN ns.sensor_id IS NOT NULL THEN 'netatmo'
                 WHEN aq.sensor_id IS NOT NULL THEN 'aqara'
                 ELSE NULL
-            END as source
+            END as source,
+            s.color
         FROM sensor s
         JOIN location l ON l.id = s.location_id
         LEFT JOIN netatmo_sensor ns ON ns.sensor_id = s.id
@@ -182,17 +183,24 @@ async def get_all_sensors(
         account_id,
     )
     return [
-        (row["id"], row["name"], row["location_name"], row["is_outdoor"], row["source"])
+        (
+            row["id"],
+            row["name"],
+            row["location_name"],
+            row["is_outdoor"],
+            row["source"],
+            row["color"],
+        )
         for row in rows
     ]
 
 
 async def get_sensor(
     *, account_id: int, sensor_id: int
-) -> tuple[int, str | None, int, str | None, bool] | None:
+) -> tuple[int, str | None, int, str | None, bool, str | None] | None:
     """
     Get a single sensor by ID.
-    Returns (id, name, location_id, location_name, is_outdoor) or None.
+    Returns (id, name, location_id, location_name, is_outdoor, color) or None.
     """
     row = await db.fetchrow(
         """
@@ -201,7 +209,8 @@ async def get_sensor(
             s.name,
             s.location_id,
             l.name as location_name,
-            COALESCE(s.is_outdoor, false) as is_outdoor
+            COALESCE(s.is_outdoor, false) as is_outdoor,
+            s.color
         FROM sensor s
         JOIN location l ON l.id = s.location_id
         WHERE s.id = $1 AND s.account_id = $2
@@ -217,22 +226,24 @@ async def get_sensor(
         row["location_id"],
         row["location_name"],
         row["is_outdoor"],
+        row["color"],
     )
 
 
 async def update_sensor(
-    *, account_id: int, sensor_id: int, name: str, is_outdoor: bool
+    *, account_id: int, sensor_id: int, name: str, is_outdoor: bool, color: str | None
 ) -> bool:
-    """Update sensor name and is_outdoor flag. Returns True if sensor exists."""
+    """Update sensor name, is_outdoor flag, and color. Returns True if sensor exists."""
     result = await db.execute(
         """
         UPDATE sensor
-        SET name = $2, is_outdoor = $3
-        WHERE id = $1 AND account_id = $4
+        SET name = $2, is_outdoor = $3, color = $4
+        WHERE id = $1 AND account_id = $5
         """,
         sensor_id,
         name,
         is_outdoor,
+        color or None,  # Convert empty string to None
         account_id,
     )
     return result == "UPDATE 1"

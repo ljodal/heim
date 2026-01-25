@@ -365,7 +365,7 @@
           x: new Date(l),
           y: sensor.values[i]
         })),
-        borderColor: getColorForSensor(sensor.id),
+        borderColor: sensor.color || getColorForSensor(sensor.id),
         tension: 0.1,
         fill: false,
         pointRadius: 0,
