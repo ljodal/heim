@@ -13,6 +13,7 @@ class Attribute(str, enum.Enum):
     CLOUD_COVER_LOW = "cloud cover low"
     CLOUD_COVER_MEDIUM = "cloud cover medium"
     CO2 = "co2"
+    CURRENT = "current"
     ENERGY = "energy"
     HUMIDITY = "humidity"
     NOISE = "noise"
@@ -21,3 +22,4 @@ class Attribute(str, enum.Enum):
     PRECIPITATION_AMOUNT = "precipitation amount"
     PRECIPITATION_AMOUNT_MAX = "precipitation amount max"
     PRECIPITATION_AMOUNT_MIN = "precipitation amount min"
+    VOLTAGE = "voltage"
