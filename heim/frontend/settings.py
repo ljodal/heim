@@ -78,13 +78,12 @@ async def settings_index(
             netatmo_account = {"id": account_info[0], "expires_at": account_info[1]}
 
     context = {
-        "request": request,
         "locations": locations,
         "netatmo_configured": netatmo_configured,
         "netatmo_account": netatmo_account,
         "active_tab": "overview",
     }
-    return templates.TemplateResponse("settings/index.html", context)
+    return templates.TemplateResponse(request, "settings/index.html", context)
 
 
 #####################
@@ -101,11 +100,10 @@ async def locations_list(
     locations = await get_locations(account_id=account_id)
 
     context = {
-        "request": request,
         "locations": locations,
         "active_tab": "locations",
     }
-    return templates.TemplateResponse("settings/locations.html", context)
+    return templates.TemplateResponse(request, "settings/locations.html", context)
 
 
 @router.get("/locations/new/", response_class=HTMLResponse)
@@ -114,11 +112,9 @@ async def location_new(
     account_id: CurrentAccount,
 ) -> Response:
     """Form to add a new location."""
-    context = {
-        "request": request,
-        "active_tab": "locations",
-    }
-    return templates.TemplateResponse("settings/location_form.html", context)
+    return templates.TemplateResponse(
+        request, "settings/location_form.html", {"active_tab": "locations"}
+    )
 
 
 @router.post("/locations/new/", response_class=RedirectResponse)
@@ -154,11 +150,10 @@ async def location_detail(
         raise HTTPException(status_code=404, detail="Location not found")
 
     context = {
-        "request": request,
         "location": location,
         "active_tab": "locations",
     }
-    return templates.TemplateResponse("settings/location_detail.html", context)
+    return templates.TemplateResponse(request, "settings/location_detail.html", context)
 
 
 @router.post("/locations/{location_id}/", response_class=RedirectResponse)
@@ -211,13 +206,12 @@ async def netatmo_index(
     locations = await get_locations(account_id=account_id)
 
     context = {
-        "request": request,
         "netatmo_account": netatmo_account,
         "sensors": sensors,
         "locations": locations,
         "active_tab": "netatmo",
     }
-    return templates.TemplateResponse("settings/netatmo.html", context)
+    return templates.TemplateResponse(request, "settings/netatmo.html", context)
 
 
 @router.get("/netatmo/link/", response_class=RedirectResponse)
@@ -267,13 +261,12 @@ async def netatmo_devices(
     locations = await get_locations(account_id=account_id)
 
     context = {
-        "request": request,
         "stations": stations,
         "registered_ids": registered_ids,
         "locations": locations,
         "active_tab": "netatmo",
     }
-    return templates.TemplateResponse("settings/netatmo_devices.html", context)
+    return templates.TemplateResponse(request, "settings/netatmo_devices.html", context)
 
 
 @with_netatmo_client
@@ -333,11 +326,10 @@ async def sensors_list(
     sensors = await get_all_sensors(account_id=account_id)
 
     context = {
-        "request": request,
         "sensors": sensors,
         "active_tab": "sensors",
     }
-    return templates.TemplateResponse("settings/sensors.html", context)
+    return templates.TemplateResponse(request, "settings/sensors.html", context)
 
 
 @router.get("/sensors/{sensor_id}/", response_class=HTMLResponse)
@@ -361,11 +353,10 @@ async def sensor_detail(
     }
 
     context = {
-        "request": request,
         "sensor": sensor,
         "active_tab": "sensors",
     }
-    return templates.TemplateResponse("settings/sensor_detail.html", context)
+    return templates.TemplateResponse(request, "settings/sensor_detail.html", context)
 
 
 @router.post("/sensors/{sensor_id}/", response_class=RedirectResponse)
@@ -406,11 +397,10 @@ async def forecasts_list(
     forecasts = await get_all_forecasts(account_id=account_id)
 
     context = {
-        "request": request,
         "forecasts": forecasts,
         "active_tab": "forecasts",
     }
-    return templates.TemplateResponse("settings/forecasts.html", context)
+    return templates.TemplateResponse(request, "settings/forecasts.html", context)
 
 
 @router.get("/forecasts/{forecast_id}/", response_class=HTMLResponse)
@@ -434,11 +424,10 @@ async def forecast_detail(
     }
 
     context = {
-        "request": request,
         "forecast": forecast,
         "active_tab": "forecasts",
     }
-    return templates.TemplateResponse("settings/forecast_detail.html", context)
+    return templates.TemplateResponse(request, "settings/forecast_detail.html", context)
 
 
 @router.post("/forecasts/{forecast_id}/", response_class=RedirectResponse)

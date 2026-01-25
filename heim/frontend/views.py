@@ -35,8 +35,7 @@ def login(request: Request) -> Response:
     Render the login form. The actual login is handled by the view below
     """
 
-    context: dict[str, Any] = {"request": request}
-    return templates.TemplateResponse("login.html", context)
+    return templates.TemplateResponse(request, "login.html")
 
 
 @router.post("/login/", response_class=RedirectResponse)
@@ -174,11 +173,10 @@ async def location_overview(
         }
 
     context = {
-        "request": request,
         "locations": locations,
         "current_location": current_location,
         "sensor_data": sensor_data,
         "forecast_data": forecast_data,
         "outdoor_hub_data": outdoor_hub_data,
     }
-    return templates.TemplateResponse("index.html", context)
+    return templates.TemplateResponse(request, "index.html", context)
