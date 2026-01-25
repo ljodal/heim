@@ -21,6 +21,8 @@ def pytest_configure(config: pytest.Config) -> None:
     os.environ.setdefault("AQARA_APP_KEY", "foo")
     os.environ.setdefault("AQARA_KEY_ID", "foo")
     os.environ.setdefault("AQARA_DOMAIN", "aqara.example.com")
+    os.environ.setdefault("NETATMO_CLIENT_ID", "foo")
+    os.environ.setdefault("NETATMO_CLIENT_SECRET", "foo")
 
 
 def pytest_sessionfinish() -> None:

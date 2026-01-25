@@ -1,0 +1,49 @@
+{% extends "layout.html" %}
+
+{% block body %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            {% if success %}
+            <div class="card border-success">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">Netatmo Account Linked!</h4>
+                </div>
+                <div class="card-body">
+                    <p>Your Netatmo account has been successfully linked to Heim account #{{ account_id }}.</p>
+                    <p>You can now list your devices and register sensors:</p>
+                    <pre class="bg-dark text-light p-3 rounded"><code>heim netatmo devices list -a {{ account_id }}</code></pre>
+                    <p class="text-muted small mt-3">
+                        You can close this window.
+                    </p>
+                </div>
+            </div>
+            {% elif error %}
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">Authorization Failed</h4>
+                </div>
+                <div class="card-body">
+                    <p><strong>Error:</strong> {{ error }}</p>
+                    {% if error_description %}
+                    <p class="text-muted">{{ error_description }}</p>
+                    {% endif %}
+                    <hr>
+                    <p>Please try again:</p>
+                    <pre class="bg-dark text-light p-3 rounded"><code>heim netatmo accounts auth</code></pre>
+                </div>
+            </div>
+            {% else %}
+            <div class="card border-warning">
+                <div class="card-header bg-warning">
+                    <h4 class="mb-0">Missing Authorization Code</h4>
+                </div>
+                <div class="card-body">
+                    <p>No authorization code was provided.</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
