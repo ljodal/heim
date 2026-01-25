@@ -1,5 +1,6 @@
 """Tests for the settings views."""
 
+from collections.abc import AsyncIterator
 from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, patch
 
@@ -20,7 +21,7 @@ pytestmark = pytest.mark.asyncio
 @pytest.fixture
 async def browser_client(
     session: Session, httpx_transport: httpx.ASGITransport
-) -> httpx.AsyncClient:
+) -> AsyncIterator[httpx.AsyncClient]:
     """Client with session cookie for browser-based views."""
     cookies = {"session_id": session.key}
     async with httpx.AsyncClient(
