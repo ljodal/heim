@@ -4,7 +4,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
 from pydantic import TypeAdapter
 
-from ...frontend.messages import Message
+from ...frontend.messages import Level, Message
 from .client import NetatmoClient
 from .exceptions import InvalidGrant, NetatmoAPIError
 from .queries import create_netatmo_account
@@ -15,7 +15,7 @@ router = APIRouter(prefix="/netatmo", tags=["netatmo"])
 _message_adapter = TypeAdapter(list[Message])
 
 
-def _redirect_with_message(url: str, level: str, message: str) -> RedirectResponse:
+def _redirect_with_message(url: str, level: Level, message: str) -> RedirectResponse:
     """Create a redirect response with a flash message cookie."""
     response = RedirectResponse(url=url, status_code=303)
     messages = [Message(level=level, message=message)]

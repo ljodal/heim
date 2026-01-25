@@ -48,7 +48,7 @@ async def netatmo_account_id(connection: None, account_id: int) -> int:
 def mock_station() -> Station:
     """Create a mock Netatmo station for testing."""
     return Station(
-        id="70:ee:50:aa:bb:cc",
+        _id="70:ee:50:aa:bb:cc",  # type: ignore[call-arg]
         type="NAMain",
         station_name="Test Station",
         home_name="Test Home",
@@ -56,13 +56,13 @@ def mock_station() -> Station:
         data_type=["Temperature", "Humidity", "CO2", "Noise", "Pressure"],
         modules=[
             Module(
-                id="02:00:00:aa:bb:dd",
+                _id="02:00:00:aa:bb:dd",  # type: ignore[call-arg]
                 type="NAModule1",
                 module_name="Outdoor",
                 data_type=["Temperature", "Humidity"],
             ),
             Module(
-                id="06:00:00:aa:bb:ee",
+                _id="06:00:00:aa:bb:ee",  # type: ignore[call-arg]
                 type="NAModule3",
                 module_name="Rain Gauge",
                 data_type=["Rain"],
