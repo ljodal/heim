@@ -8,12 +8,12 @@ from .. import db
 from ..auth.dependencies import current_account
 from ..sensors.types import Attribute
 from .queries import (
-    DEFAULT_ALPHA,
     get_bias_stats,
     get_forecast_and_sensor_for_location,
     get_latest_forecast_values,
+    lookup_with_fallback,
 )
-from .stats import BiasBucket, EWMAState
+from .stats import BiasBucket
 from .types import AdjustedForecast, AdjustedForecastValue, BiasStats
 
 router = APIRouter()
@@ -83,8 +83,8 @@ async def get_adjusted_forecast(
         # Calculate lead time in hours
         lead_time_hours = (measured_at - created_at).total_seconds() / 3600
 
-        # Get stats for this bucket, or use defaults
-        stats = bias_stats.get(bucket_key, EWMAState(alpha=DEFAULT_ALPHA))
+        # Get stats with fallback to less specific buckets if needed
+        stats = lookup_with_fallback(bucket, bias_stats)
 
         # Apply bias correction: adjusted = raw - mean_error
         adjusted_value = round(raw_value - stats.mean)

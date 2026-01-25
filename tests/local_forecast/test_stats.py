@@ -282,6 +282,112 @@ class TestBiasBucket:
         assert len(keys) == 80
 
 
+class TestFallbackLookup:
+    """Tests for the fallback bucket lookup logic."""
+
+    def test_exact_match_returned(self) -> None:
+        """When exact bucket has enough data, use it."""
+        from heim.local_forecast.queries import lookup_with_fallback
+
+        bucket = BiasBucket(
+            lead_time=0, season=Season.WINTER, time_of_day=TimeOfDay.MORNING
+        )
+        stats = {
+            bucket.to_db_key(): EWMAState(alpha=0.05, count=10, mean=50.0, var=100.0),
+        }
+
+        result = lookup_with_fallback(bucket, stats, min_count=5)
+        assert result.count == 10
+        assert result.mean == 50.0
+
+    def test_fallback_to_same_season(self) -> None:
+        """When exact bucket is sparse, fall back to same season different time."""
+        from heim.local_forecast.queries import lookup_with_fallback
+
+        bucket = BiasBucket(
+            lead_time=0, season=Season.WINTER, time_of_day=TimeOfDay.MORNING
+        )
+        # Exact bucket has too few samples
+        exact_key = bucket.to_db_key()
+        # But winter evening has enough
+        fallback = BiasBucket(
+            lead_time=0, season=Season.WINTER, time_of_day=TimeOfDay.EVENING
+        )
+        fallback_key = fallback.to_db_key()
+
+        stats = {
+            exact_key: EWMAState(alpha=0.05, count=2, mean=30.0, var=50.0),  # Too few
+            fallback_key: EWMAState(
+                alpha=0.05, count=10, mean=50.0, var=100.0
+            ),  # Enough
+        }
+
+        result = lookup_with_fallback(bucket, stats, min_count=5)
+        assert result.count == 10
+        assert result.mean == 50.0
+
+    def test_fallback_to_different_season(self) -> None:
+        """When no bucket in same season has enough, try different season."""
+        from heim.local_forecast.queries import lookup_with_fallback
+
+        bucket = BiasBucket(
+            lead_time=0, season=Season.WINTER, time_of_day=TimeOfDay.MORNING
+        )
+        # Summer morning has enough data
+        fallback = BiasBucket(
+            lead_time=0, season=Season.SUMMER, time_of_day=TimeOfDay.MORNING
+        )
+        fallback_key = fallback.to_db_key()
+
+        stats = {
+            fallback_key: EWMAState(alpha=0.05, count=10, mean=25.0, var=80.0),
+        }
+
+        result = lookup_with_fallback(bucket, stats, min_count=5)
+        assert result.count == 10
+        assert result.mean == 25.0
+
+    def test_aggregate_lead_time_when_all_sparse(self) -> None:
+        """When all buckets are sparse, aggregate by lead time."""
+        from heim.local_forecast.queries import lookup_with_fallback
+
+        bucket = BiasBucket(
+            lead_time=0, season=Season.WINTER, time_of_day=TimeOfDay.MORNING
+        )
+
+        # Multiple sparse buckets for same lead time
+        stats = {
+            BiasBucket(
+                lead_time=0, season=Season.WINTER, time_of_day=TimeOfDay.MORNING
+            ).to_db_key(): EWMAState(alpha=0.05, count=2, mean=40.0, var=100.0),
+            BiasBucket(
+                lead_time=0, season=Season.SUMMER, time_of_day=TimeOfDay.EVENING
+            ).to_db_key(): EWMAState(alpha=0.05, count=3, mean=60.0, var=200.0),
+        }
+
+        result = lookup_with_fallback(bucket, stats, min_count=5)
+        # Should aggregate: (2*40 + 3*60) / 5 = 52
+        assert result.count == 5
+        assert result.mean == 52.0
+
+    def test_no_data_returns_prior(self) -> None:
+        """When no data exists, return uninformative prior."""
+        from heim.local_forecast.queries import (
+            DEFAULT_PRIOR_VARIANCE,
+            lookup_with_fallback,
+        )
+
+        bucket = BiasBucket(
+            lead_time=0, season=Season.WINTER, time_of_day=TimeOfDay.MORNING
+        )
+        stats: dict[int, EWMAState] = {}
+
+        result = lookup_with_fallback(bucket, stats, min_count=5)
+        assert result.count == 0
+        assert result.mean == 0.0  # No bias correction
+        assert result.var == DEFAULT_PRIOR_VARIANCE  # High uncertainty
+
+
 class TestPredictionInterval:
     def test_80_percent_interval(self) -> None:
         lower, upper = prediction_interval(100.0, 10.0, 80)
