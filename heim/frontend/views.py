@@ -128,11 +128,11 @@ async def location_overview(
     if outdoor_sensors:
         now = datetime.now(UTC)
 
-        # Collect measurements from all outdoor sensors (24h)
+        # Collect measurements from all outdoor sensors (48h)
         all_measurements: list[tuple[datetime, float]] = []
         for sensor_id, _ in outdoor_sensors:
             measurements = await get_measurements(
-                sensor_id=sensor_id, attribute=Attribute.AIR_TEMPERATURE, hours=24
+                sensor_id=sensor_id, attribute=Attribute.AIR_TEMPERATURE, hours=48
             )
             all_measurements.extend(measurements)
 
