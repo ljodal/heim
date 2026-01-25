@@ -51,20 +51,16 @@
         </div>
       </div>
       {% endif %}
-      {% for sensor in sensor_data %}
-      <div class="col-12 col-md-6 mt-4">
+      {% if sensor_data %}
+      <div class="col-12 mt-4">
         <div class="card">
           <div class="card-body">
-            <h5 class="card-title">{{ sensor.name }}</h5>
-            <canvas id="chart-{{ loop.index }}"></canvas>
+            <h5 class="card-title">Indoor</h5>
+            <canvas id="indoor-chart"></canvas>
           </div>
         </div>
       </div>
-      {% else %}
-      <div class="col-12 mt-4">
-        <p class="text-muted">No sensor data available.</p>
-      </div>
-      {% endfor %}
+      {% endif %}
     </div>
   </main>
 
@@ -354,23 +350,48 @@
     const now = new Date();
     const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-    sensorData.forEach((sensor, index) => {
-      const ctx = document.getElementById(`chart-${index + 1}`);
+    // Generate a stable color from sensor ID using a simple hash
+    function getColorForSensor(sensorId) {
+      // Use golden ratio to spread colors evenly
+      const hue = (sensorId * 137.508) % 360;
+      return `hsl(${hue}, 70%, 50%)`;
+    }
+
+    if (sensorData.length > 0) {
+      const ctx = document.getElementById('indoor-chart');
+      const datasets = sensorData.map(sensor => ({
+        label: sensor.name,
+        data: sensor.labels.map((l, i) => ({
+          x: new Date(l),
+          y: sensor.values[i]
+        })),
+        borderColor: getColorForSensor(sensor.id),
+        tension: 0.1,
+        fill: false,
+        pointRadius: 0,
+        borderWidth: 2,
+      }));
+
       new Chart(ctx, {
         type: 'line',
-        data: {
-          labels: sensor.labels.map(l => new Date(l)),
-          datasets: [{
-            label: 'Temperature',
-            data: sensor.values,
-            borderColor: '#dc3545',
-            tension: 0.1,
-            fill: false,
-            pointRadius: 0,
-          }]
-        },
+        data: { datasets },
         options: {
           responsive: true,
+          interaction: {
+            intersect: false,
+            mode: 'nearest',
+            axis: 'x',
+          },
+          plugins: {
+            legend: {
+              display: true,
+              position: 'right',
+              labels: {
+                usePointStyle: true,
+                pointStyle: 'line',
+              }
+            }
+          },
           scales: {
             x: {
               type: 'time',
@@ -418,10 +439,17 @@
                   .filter(tick => tick.value <= axis.max);
               }
             },
-            y: { beginAtZero: false }
+            y: {
+              beginAtZero: false,
+              grace: '5%',
+              title: {
+                display: true,
+                text: '°C'
+              }
+            }
           }
         }
       });
-    });
+    }
   </script>
 {% endblock %}

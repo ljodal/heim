@@ -6,20 +6,30 @@ from .types import Attribute
 
 
 async def get_sensors(
-    *, account_id: int, location_id: int
+    *, account_id: int, location_id: int, is_outdoor: bool | None = None
 ) -> list[tuple[int, str | None]]:
     """
-    Get all sensors for a location. Returns list of (id, name) tuples.
+    Get sensors for a location. Returns list of (id, name) tuples.
+
+    Args:
+        is_outdoor: If True, only outdoor sensors. If False, only indoor.
+                    If None, all sensors.
     """
-    rows = await db.fetch(
+    if is_outdoor is None:
+        query = """
+            SELECT id, name
+            FROM sensor
+            WHERE location_id = $1 AND account_id = $2
         """
-        SELECT id, name
-        FROM sensor
-        WHERE location_id = $1 AND account_id = $2
-        """,
-        location_id,
-        account_id,
-    )
+        rows = await db.fetch(query, location_id, account_id)
+    else:
+        query = """
+            SELECT id, name
+            FROM sensor
+            WHERE location_id = $1 AND account_id = $2
+              AND COALESCE(is_outdoor, false) = $3
+        """
+        rows = await db.fetch(query, location_id, account_id, is_outdoor)
     return [(row["id"], row["name"]) for row in rows]
 
 
@@ -71,22 +81,6 @@ async def save_measurements(
             for attribute, timestamp, value in values
         ],
     )
-
-
-async def get_outdoor_sensors(
-    *, account_id: int, location_id: int
-) -> list[tuple[int, str | None]]:
-    """Get all outdoor sensors for a location."""
-    rows = await db.fetch(
-        """
-        SELECT id, name
-        FROM sensor
-        WHERE location_id = $1 AND account_id = $2 AND is_outdoor = true
-        """,
-        location_id,
-        account_id,
-    )
-    return [(row["id"], row["name"]) for row in rows]
 
 
 async def set_outdoor_sensor(

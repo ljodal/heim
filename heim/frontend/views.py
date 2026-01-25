@@ -10,7 +10,7 @@ from ..accounts.utils import compare_password, hash_password
 from ..auth.dependencies import CookieSession
 from ..auth.queries import create_session, delete_session
 from ..forecasts.queries import get_forecast, get_instances, get_latest_forecast_values
-from ..sensors.queries import get_measurements, get_outdoor_sensors, get_sensors
+from ..sensors.queries import get_measurements, get_sensors
 from ..sensors.types import Attribute
 from .dependencies import CurrentAccount
 from .messages import Messages, get_messages
@@ -93,8 +93,10 @@ async def location_overview(
     except StopIteration as e:
         raise HTTPException(status_code=404, detail="Unknown location") from e
 
-    # Get sensor data for charts
-    sensors = await get_sensors(account_id=account_id, location_id=location_id)
+    # Get indoor sensor data for charts
+    sensors = await get_sensors(
+        account_id=account_id, location_id=location_id, is_outdoor=False
+    )
     sensor_data = []
     for sensor_id, sensor_name in sensors:
         measurements = await get_measurements(
@@ -103,6 +105,7 @@ async def location_overview(
         if measurements:
             sensor_data.append(
                 {
+                    "id": sensor_id,
                     "name": sensor_name or f"Sensor {sensor_id}",
                     "labels": [m[0].isoformat() for m in measurements],
                     "values": [m[1] / 100 for m in measurements],
@@ -122,8 +125,8 @@ async def location_overview(
 
     # Build outdoor hub data
     outdoor_hub_data = None
-    outdoor_sensors = await get_outdoor_sensors(
-        account_id=account_id, location_id=location_id
+    outdoor_sensors = await get_sensors(
+        account_id=account_id, location_id=location_id, is_outdoor=True
     )
     if outdoor_sensors:
         now = datetime.now(UTC)
