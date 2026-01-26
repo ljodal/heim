@@ -163,3 +163,26 @@ async def backfill_charger(account_id: int, sensor_id: int, days: int) -> None:
         from_time=from_time,
     )
     click.echo(f"Backfilled {days} days of hourly usage")
+
+
+#############
+# Streaming #
+#############
+
+
+@cli.command(name="stream")
+@click.option("--account-id", "-a", required=True, type=int, help="Account ID")
+@db.setup_pool()
+async def stream_chargers(account_id: int) -> None:
+    """
+    Start real-time streaming of charger data via SignalR.
+
+    This maintains a persistent WebSocket connection and receives
+    live updates from all registered chargers. Run this as a
+    long-running worker process.
+    """
+    from .streaming import run_streaming_worker
+
+    click.echo(f"Starting Easee streaming worker for account {account_id}...")
+    click.echo("Press Ctrl+C to stop")
+    await run_streaming_worker(account_id=account_id)
