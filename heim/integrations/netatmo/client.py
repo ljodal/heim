@@ -1,10 +1,9 @@
 from datetime import UTC, datetime
-from typing import Any, Self
+from typing import Any
 
-import httpx
 import structlog
 
-from ..common import getenv
+from ..common import BaseAPIClient, getenv
 from .exceptions import (
     ExpiredAccessToken,
     InvalidGrant,
@@ -24,21 +23,15 @@ AUTH_URL = "https://api.netatmo.com/oauth2/token"
 API_URL = "https://api.netatmo.com/api"
 
 
-class NetatmoClient:
+class NetatmoClient(BaseAPIClient):
     """
     A client for communicating with the Netatmo API.
     """
 
     def __init__(self, *, access_token: str | None = None) -> None:
+        super().__init__(access_token=access_token)
         self.client_id = getenv("NETATMO_CLIENT_ID")
         self.client_secret = getenv("NETATMO_CLIENT_SECRET")
-        self.access_token = access_token
-        self.client: httpx.AsyncClient | None = None
-
-    async def close(self) -> None:
-        if self.client:
-            await self.client.aclose()
-            self.client = None
 
     ########
     # Auth #
@@ -69,8 +62,7 @@ class NetatmoClient:
         """
         Make a token request to the Netatmo OAuth endpoint.
         """
-        if not self.client:
-            self.client = httpx.AsyncClient()
+        client = self._ensure_client()
 
         request_data = {
             "client_id": self.client_id,
@@ -83,7 +75,7 @@ class NetatmoClient:
             f"Token request with client_id starting with: {self.client_id[:8]}..."
         )
 
-        response = await self.client.post(AUTH_URL, data=request_data)
+        response = await client.post(AUTH_URL, data=request_data)
 
         if response.status_code >= 400:
             try:
@@ -114,7 +106,7 @@ class NetatmoClient:
                 f"Token request failed: {error} - {error_description}"
             )
 
-        return TokenResponse.model_validate(response.json())
+        return self._decode_json(response, TokenResponse)
 
     ################
     # Station data #
@@ -219,18 +211,6 @@ class NetatmoClient:
 
         return result
 
-    ###################
-    # Context manager #
-    ###################
-
-    async def __aenter__(self) -> Self:
-        if not self.client:
-            self.client = httpx.AsyncClient()
-        return self
-
-    async def __aexit__(self, *args: Any) -> None:
-        await self.close()
-
     ####################
     # Internal helpers #
     ####################
@@ -241,13 +221,12 @@ class NetatmoClient:
         """
         Make an authenticated API request.
         """
-        if not self.client:
-            self.client = httpx.AsyncClient()
+        client = self._ensure_client()
 
         if not self.access_token:
             raise NetatmoAPIError("No access token available")
 
-        response = await self.client.get(
+        response = await client.get(
             f"{API_URL}/{endpoint}",
             params=params or {},
             headers={"Authorization": f"Bearer {self.access_token}"},

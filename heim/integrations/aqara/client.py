@@ -3,12 +3,12 @@ import string
 import time
 from collections.abc import Iterable
 from datetime import datetime
-from typing import Any, Self, TypeVar
+from typing import TypeVar
 
 import httpx
 
 from ...accounts.utils import get_random_string
-from ..common import getenv
+from ..common import BaseAPIClient, getenv
 from .exceptions import AqaraAPIError, ExpiredAccessToken
 from .types import (
     AccessTokenResult,
@@ -25,23 +25,17 @@ from .types import (
 )
 
 
-class AqaraClient:
+class AqaraClient(BaseAPIClient):
     """
     A client for communicating with the Aqara Open API.
     """
 
     def __init__(self, *, access_token: str | None = None) -> None:
+        super().__init__(access_token=access_token)
         self.app_id = getenv("AQARA_APP_ID")
         self.app_key = getenv("AQARA_APP_KEY")
         self.key_id = getenv("AQARA_KEY_ID")
         self.domain = getenv("AQARA_DOMAIN")
-        self.access_token = access_token
-        self.client: httpx.AsyncClient | None = None
-
-    async def close(self) -> None:
-        if self.client:
-            await self.client.aclose()
-            self.client = None
 
     ########
     # Auth #
@@ -135,18 +129,6 @@ class AqaraClient:
             response_type=BaseResponse[QueryResourceHistoryResult],
         )
 
-    ###################
-    # Context manager #
-    ###################
-
-    async def __aenter__(self) -> Self:
-        if not self.client:
-            self.client = httpx.AsyncClient()
-        return self
-
-    async def __aexit__(self, *args: Any) -> None:
-        await self.close()
-
     ####################
     # Internal helpers #
     ####################
@@ -156,17 +138,16 @@ class AqaraClient:
     async def _request(
         self, intent: Intent, data: IntentData, response_type: type[BaseResponse[T]]
     ) -> T:
-        if not self.client:
-            self.client = httpx.AsyncClient()
+        client = self._ensure_client()
 
-        request = self.client.build_request(
+        request = client.build_request(
             "POST",
             f"https://{self.domain}/v3.0/open/api",
             json={"intent": intent, "data": data},
         )
         self._prepare_auth(request)
 
-        response = await self.client.send(request)
+        response = await client.send(request)
         return self._check_response(response, response_type)
 
     def _prepare_auth(self, request: httpx.Request) -> None:
@@ -196,7 +177,7 @@ class AqaraClient:
     ) -> T:
         response.raise_for_status()
 
-        parsed_response = response_type.model_validate_json(response.text)
+        parsed_response = self._decode_json(response, response_type)
 
         if parsed_response.code == 108:
             raise ExpiredAccessToken("Access token has expired", parsed_response)
