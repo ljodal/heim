@@ -1,69 +1,26 @@
-import functools
-import inspect
-from collections.abc import Awaitable, Callable
-from datetime import UTC, datetime, timedelta
-from typing import Concatenate, cast
-
-import structlog
-
-from ... import db
+from ..common import create_oauth_decorator
 from .client import NetatmoClient
-from .exceptions import ExpiredAccessToken
 from .queries import get_netatmo_account, update_netatmo_account
 
-logger = structlog.get_logger()
+with_netatmo_client = create_oauth_decorator(
+    create_client=lambda token: NetatmoClient(access_token=token),
+    get_account=lambda account_id: get_netatmo_account(account_id=account_id),
+    get_account_for_update=lambda account_id, for_update: get_netatmo_account(
+        account_id=account_id, for_update=for_update
+    ),
+    update_account=lambda account, refresh_token, access_token, expires_at: (
+        update_netatmo_account(
+            account,
+            refresh_token=refresh_token,
+            access_token=access_token,
+            expires_at=expires_at,
+        )
+    ),
+)
+"""
+Decorator that injects a NetatmoClient and handles token refresh.
 
-
-def with_netatmo_client[**P, R](
-    func: Callable[Concatenate[NetatmoClient, P], Awaitable[R]],
-) -> Callable[P, Awaitable[R]]:
-    """
-    A decorator that injects a Netatmo client to the decorated function. The
-    decorated function must have an account_id keyword argument that will be
-    used to look up the access token.
-
-    This will also automatically refresh access tokens if it catches an
-    ExpiredAccessToken exception and call the decorated function again with a
-    new access token. Because of this decorated functions should be idempotent.
-    """
-
-    parameters = inspect.signature(func).parameters
-    assert "account_id" in parameters
-
-    @functools.wraps(func)
-    async def inner(*args: P.args, **kwargs: P.kwargs) -> R:
-        account_id = cast(int, kwargs["account_id"])
-        account = await get_netatmo_account(account_id=account_id)
-        async with NetatmoClient(access_token=account.access_token) as client:
-            try:
-                return await func(client, *args, **kwargs)
-            except ExpiredAccessToken:
-                logger.warning("Access token has expired, refreshing")
-                # The access token has expired, so refresh it and retry
-                await refresh_access_token(client, account_id=account_id)
-                return await func(client, *args, **kwargs)
-
-    return inner
-
-
-async def refresh_access_token(client: NetatmoClient, *, account_id: int) -> None:
-    """
-    Refresh the Netatmo access token for the given account.
-    """
-
-    async with db.connection() as con:
-        if con.is_in_transaction():
-            raise RuntimeError("Cannot refresh access token in a transaction")
-
-        async with con.transaction():
-            account = await get_netatmo_account(account_id=account_id, for_update=True)
-
-            response = await client.refresh_token(refresh_token=account.refresh_token)
-            client.access_token = response.access_token
-
-            await update_netatmo_account(
-                account,
-                refresh_token=response.refresh_token,
-                access_token=response.access_token,
-                expires_at=(datetime.now(UTC) + timedelta(seconds=response.expires_in)),
-            )
+The decorated function must have an account_id keyword argument.
+On ExpiredAccessToken, the token is refreshed and the function retried.
+Because of this, decorated functions should be idempotent.
+"""
