@@ -7,7 +7,6 @@ from ...sensors.types import Attribute
 from ...tasks import task
 from .client import AqaraClient
 from .queries import get_aqara_sensor
-from .services import with_aqara_client
 from .types import QueryResourceHistoryResult
 
 logger = structlog.get_logger()
@@ -41,7 +40,7 @@ MODEL_TO_RESOURCE_MAPPING: dict[str, dict[str, Attribute]] = {
 
 
 @task(name="update-aqara-sensor-data", allow_skip=True, atomic=False)
-@with_aqara_client
+@AqaraClient.authenticated()
 async def update_sensor_data(
     client: AqaraClient,
     *,

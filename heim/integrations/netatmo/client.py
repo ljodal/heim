@@ -4,6 +4,7 @@ from typing import Any
 import structlog
 
 from ..common import BaseAPIClient, getenv
+from ..common.client import OAuthAccount
 from .exceptions import (
     ExpiredAccessToken,
     InvalidGrant,
@@ -24,7 +25,7 @@ AUTH_URL = "https://api.netatmo.com/oauth2/token"
 API_URL = "https://api.netatmo.com/api"
 
 
-class NetatmoClient(BaseAPIClient["NetatmoAccount"]):
+class NetatmoClient(BaseAPIClient):
     """
     A client for communicating with the Netatmo API.
     """
@@ -49,7 +50,7 @@ class NetatmoClient(BaseAPIClient["NetatmoAccount"]):
     @classmethod
     async def update_account(
         cls,
-        account: NetatmoAccount,
+        account: OAuthAccount,
         *,
         refresh_token: str,
         access_token: str,
@@ -58,7 +59,7 @@ class NetatmoClient(BaseAPIClient["NetatmoAccount"]):
         from .queries import update_netatmo_account
 
         await update_netatmo_account(
-            account,
+            account,  # type: ignore[arg-type]
             refresh_token=refresh_token,
             access_token=access_token,
             expires_at=expires_at,

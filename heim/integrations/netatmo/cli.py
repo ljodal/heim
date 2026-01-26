@@ -8,7 +8,6 @@ import click
 from ... import db
 from .client import NetatmoClient
 from .queries import create_netatmo_account, create_netatmo_sensor, get_netatmo_sensors
-from .services import with_netatmo_client
 from .tasks import update_sensor_data
 
 # OAuth URLs
@@ -111,7 +110,7 @@ def devices() -> None:
 @devices.command(name="list")
 @click.option("--account-id", "-a", type=int, help="Account id", required=True)
 @db.setup()
-@with_netatmo_client
+@NetatmoClient.authenticated()
 async def list_devices(client: NetatmoClient, *, account_id: int) -> None:
     """
     List all Netatmo weather stations and their modules.
@@ -167,7 +166,7 @@ async def list_devices(client: NetatmoClient, *, account_id: int) -> None:
 @click.option("--location-id", type=int, help="Location ID", required=True)
 @click.option("--account-id", "-a", type=int, help="Account id", required=True)
 @db.setup()
-@with_netatmo_client
+@NetatmoClient.authenticated()
 async def create_device(
     client: NetatmoClient,
     *,

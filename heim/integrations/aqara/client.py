@@ -9,6 +9,7 @@ import httpx
 
 from ...accounts.utils import get_random_string
 from ..common import BaseAPIClient, getenv
+from ..common.client import OAuthAccount
 from .exceptions import AqaraAPIError, ExpiredAccessToken
 from .models import AqaraAccount
 from .types import (
@@ -26,7 +27,7 @@ from .types import (
 )
 
 
-class AqaraClient(BaseAPIClient["AqaraAccount"]):
+class AqaraClient(BaseAPIClient):
     """
     A client for communicating with the Aqara Open API.
     """
@@ -53,7 +54,7 @@ class AqaraClient(BaseAPIClient["AqaraAccount"]):
     @classmethod
     async def update_account(
         cls,
-        account: AqaraAccount,
+        account: OAuthAccount,
         *,
         refresh_token: str,
         access_token: str,
@@ -62,7 +63,7 @@ class AqaraClient(BaseAPIClient["AqaraAccount"]):
         from .queries import update_aqara_account
 
         await update_aqara_account(
-            account,
+            account,  # type: ignore[arg-type]
             refresh_token=refresh_token,
             access_token=access_token,
             expires_at=expires_at,

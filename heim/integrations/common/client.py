@@ -43,7 +43,7 @@ class TokenResponse(Protocol):
     expires_in: int
 
 
-class BaseAPIClient[AccountT: OAuthAccount](ABC):
+class BaseAPIClient(ABC):
     """
     Base class for API clients using httpx with OAuth support.
 
@@ -52,9 +52,9 @@ class BaseAPIClient[AccountT: OAuthAccount](ABC):
     - update_account: Update account tokens in database
     - refresh_token: Call the API to refresh the access token
 
-    Then use the `with_client()` class method as a decorator:
+    Then use the `authenticated()` class method as a decorator:
 
-        @AqaraClient.with_client()
+        @AqaraClient.authenticated()
         async def fetch_data(client: AqaraClient, *, account_id: int) -> Data:
             return await client.get_data()
     """
@@ -84,7 +84,7 @@ class BaseAPIClient[AccountT: OAuthAccount](ABC):
     @abstractmethod
     async def get_account(
         cls, account_id: int, *, for_update: bool = False
-    ) -> AccountT:
+    ) -> OAuthAccount:
         """Fetch the OAuth account from the database."""
         ...
 
@@ -92,7 +92,7 @@ class BaseAPIClient[AccountT: OAuthAccount](ABC):
     @abstractmethod
     async def update_account(
         cls,
-        account: AccountT,
+        account: OAuthAccount,
         *,
         refresh_token: str,
         access_token: str,
@@ -111,21 +111,21 @@ class BaseAPIClient[AccountT: OAuthAccount](ABC):
     # ======================
 
     @classmethod
-    def with_client[**P, R](
+    def authenticated[**P, R](
         cls,
     ) -> Callable[
         [Callable[Concatenate[Self, P], Awaitable[R]]],
         Callable[P, Awaitable[R]],
     ]:
         """
-        Decorator that injects a client and handles token refresh.
+        Decorator that injects an authenticated client and handles token refresh.
 
         The decorated function must have an `account_id` keyword argument.
         On ExpiredAccessToken, the token is refreshed and the function retried.
         Because of this, decorated functions should be idempotent.
 
         Example:
-            @MyClient.with_client()
+            @MyClient.authenticated()
             async def fetch_data(client: MyClient, *, account_id: int) -> Data:
                 return await client.get_data()
         """
