@@ -1,12 +1,4 @@
-"""
-Base API client with OAuth support.
-
-Provides shared functionality for API clients:
-- httpx.AsyncClient lifecycle management
-- Async context manager support
-- Pydantic response decoding helpers
-- OAuth token refresh with automatic retry decorator
-"""
+"""Base API client with OAuth support."""
 
 import functools
 import inspect
@@ -44,20 +36,7 @@ class TokenResponse(Protocol):
 
 
 class BaseAPIClient(ABC):
-    """
-    Base class for API clients using httpx with OAuth support.
-
-    Subclasses must implement:
-    - get_account: Fetch account from database
-    - update_account: Update account tokens in database
-    - refresh_token: Call the API to refresh the access token
-
-    Then use the `authenticated()` class method as a decorator:
-
-        @AqaraClient.authenticated()
-        async def fetch_data(client: AqaraClient, *, account_id: int) -> Data:
-            return await client.get_data()
-    """
+    """Base class for API clients with OAuth token refresh support."""
 
     access_token: str | None
     client: httpx.AsyncClient
@@ -67,7 +46,6 @@ class BaseAPIClient(ABC):
         self.client = httpx.AsyncClient()
 
     async def close(self) -> None:
-        """Close the httpx client and release resources."""
         await self.client.aclose()
 
     async def __aenter__(self) -> Self:
@@ -76,17 +54,11 @@ class BaseAPIClient(ABC):
     async def __aexit__(self, *args: Any) -> None:
         await self.close()
 
-    # ======================
-    # Abstract methods
-    # ======================
-
     @classmethod
     @abstractmethod
     async def get_account(
         cls, account_id: int, *, for_update: bool = False
-    ) -> OAuthAccount:
-        """Fetch the OAuth account from the database."""
-        ...
+    ) -> OAuthAccount: ...
 
     @classmethod
     @abstractmethod
@@ -97,18 +69,10 @@ class BaseAPIClient(ABC):
         refresh_token: str,
         access_token: str,
         expires_at: datetime,
-    ) -> None:
-        """Update the OAuth account tokens in the database."""
-        ...
+    ) -> None: ...
 
     @abstractmethod
-    async def refresh_token(self, *, refresh_token: str) -> TokenResponse:
-        """Call the API to refresh the access token."""
-        ...
-
-    # ======================
-    # OAuth decorator
-    # ======================
+    async def refresh_token(self, *, refresh_token: str) -> TokenResponse: ...
 
     @classmethod
     def authenticated[**P, R](
@@ -117,18 +81,7 @@ class BaseAPIClient(ABC):
         [Callable[Concatenate[Self, P], Awaitable[R]]],
         Callable[P, Awaitable[R]],
     ]:
-        """
-        Decorator that injects an authenticated client and handles token refresh.
-
-        The decorated function must have an `account_id` keyword argument.
-        On ExpiredAccessToken, the token is refreshed and the function retried.
-        Because of this, decorated functions should be idempotent.
-
-        Example:
-            @MyClient.authenticated()
-            async def fetch_data(client: MyClient, *, account_id: int) -> Data:
-                return await client.get_data()
-        """
+        """Decorator that injects an authenticated client and handles token refresh."""
 
         def decorator(
             func: Callable[Concatenate[Self, P], Awaitable[R]],
@@ -158,14 +111,7 @@ class BaseAPIClient(ABC):
 
     @classmethod
     async def _refresh_access_token(cls, client: Self, account_id: int) -> None:
-        """
-        Refresh the OAuth access token for an account.
-
-        Handles the complexity of:
-        - Ensuring we're not already in a transaction (to avoid deadlocks)
-        - Acquiring a row lock on the account to prevent concurrent refreshes
-        - Updating both the client and database with new tokens
-        """
+        """Refresh the OAuth access token, handling row locking to prevent races."""
         async with db.connection() as con:
             if con.is_in_transaction():
                 raise RuntimeError("Cannot refresh access token in a transaction")
@@ -186,27 +132,8 @@ class BaseAPIClient(ABC):
                     + timedelta(seconds=response.expires_in),
                 )
 
-    # ======================
-    # Response decoding
-    # ======================
-
     def _decode_json[T: BaseModel](
         self, response: httpx.Response, response_type: type[T]
     ) -> T:
-        """
-        Decode a JSON response into a Pydantic model.
-
-        Uses model_validate_json for efficiency (single parse).
-        """
+        """Decode a JSON response into a Pydantic model."""
         return response_type.model_validate_json(response.text)
-
-    def _decode_json_field[T: BaseModel](
-        self, response: httpx.Response, response_type: type[T], field: str
-    ) -> T:
-        """
-        Decode a nested field from a JSON response into a Pydantic model.
-
-        Useful when the API wraps the response in a container like {"body": ...}.
-        """
-        data = response.json()
-        return response_type.model_validate(data[field])
