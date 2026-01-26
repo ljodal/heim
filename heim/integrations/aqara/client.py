@@ -10,6 +10,7 @@ import httpx
 from ...accounts.utils import get_random_string
 from ..common import BaseAPIClient, getenv
 from .exceptions import AqaraAPIError, ExpiredAccessToken
+from .models import AqaraAccount
 from .types import (
     AccessTokenResult,
     AuthCodeResult,
@@ -25,7 +26,7 @@ from .types import (
 )
 
 
-class AqaraClient(BaseAPIClient):
+class AqaraClient(BaseAPIClient["AqaraAccount"]):
     """
     A client for communicating with the Aqara Open API.
     """
@@ -36,6 +37,36 @@ class AqaraClient(BaseAPIClient):
         self.app_key = getenv("AQARA_APP_KEY")
         self.key_id = getenv("AQARA_KEY_ID")
         self.domain = getenv("AQARA_DOMAIN")
+
+    # ======================
+    # OAuth account methods
+    # ======================
+
+    @classmethod
+    async def get_account(
+        cls, account_id: int, *, for_update: bool = False
+    ) -> AqaraAccount:
+        from .queries import get_aqara_account
+
+        return await get_aqara_account(account_id=account_id, for_update=for_update)
+
+    @classmethod
+    async def update_account(
+        cls,
+        account: AqaraAccount,
+        *,
+        refresh_token: str,
+        access_token: str,
+        expires_at: datetime,
+    ) -> None:
+        from .queries import update_aqara_account
+
+        await update_aqara_account(
+            account,
+            refresh_token=refresh_token,
+            access_token=access_token,
+            expires_at=expires_at,
+        )
 
     ########
     # Auth #
@@ -138,16 +169,14 @@ class AqaraClient(BaseAPIClient):
     async def _request(
         self, intent: Intent, data: IntentData, response_type: type[BaseResponse[T]]
     ) -> T:
-        client = self._ensure_client()
-
-        request = client.build_request(
+        request = self.client.build_request(
             "POST",
             f"https://{self.domain}/v3.0/open/api",
             json={"intent": intent, "data": data},
         )
         self._prepare_auth(request)
 
-        response = await client.send(request)
+        response = await self.client.send(request)
         return self._check_response(response, response_type)
 
     def _prepare_auth(self, request: httpx.Request) -> None:

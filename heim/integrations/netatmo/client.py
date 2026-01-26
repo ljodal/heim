@@ -10,6 +10,7 @@ from .exceptions import (
     InvalidRefreshToken,
     NetatmoAPIError,
 )
+from .models import NetatmoAccount
 from .types import (
     MeasureResponse,
     StationsDataResponse,
@@ -23,7 +24,7 @@ AUTH_URL = "https://api.netatmo.com/oauth2/token"
 API_URL = "https://api.netatmo.com/api"
 
 
-class NetatmoClient(BaseAPIClient):
+class NetatmoClient(BaseAPIClient["NetatmoAccount"]):
     """
     A client for communicating with the Netatmo API.
     """
@@ -32,6 +33,36 @@ class NetatmoClient(BaseAPIClient):
         super().__init__(access_token=access_token)
         self.client_id = getenv("NETATMO_CLIENT_ID")
         self.client_secret = getenv("NETATMO_CLIENT_SECRET")
+
+    # ======================
+    # OAuth account methods
+    # ======================
+
+    @classmethod
+    async def get_account(
+        cls, account_id: int, *, for_update: bool = False
+    ) -> NetatmoAccount:
+        from .queries import get_netatmo_account
+
+        return await get_netatmo_account(account_id=account_id, for_update=for_update)
+
+    @classmethod
+    async def update_account(
+        cls,
+        account: NetatmoAccount,
+        *,
+        refresh_token: str,
+        access_token: str,
+        expires_at: datetime,
+    ) -> None:
+        from .queries import update_netatmo_account
+
+        await update_netatmo_account(
+            account,
+            refresh_token=refresh_token,
+            access_token=access_token,
+            expires_at=expires_at,
+        )
 
     ########
     # Auth #
@@ -62,8 +93,6 @@ class NetatmoClient(BaseAPIClient):
         """
         Make a token request to the Netatmo OAuth endpoint.
         """
-        client = self._ensure_client()
-
         request_data = {
             "client_id": self.client_id,
             "client_secret": self.client_secret,
@@ -75,7 +104,7 @@ class NetatmoClient(BaseAPIClient):
             f"Token request with client_id starting with: {self.client_id[:8]}..."
         )
 
-        response = await client.post(AUTH_URL, data=request_data)
+        response = await self.client.post(AUTH_URL, data=request_data)
 
         if response.status_code >= 400:
             try:
@@ -221,12 +250,10 @@ class NetatmoClient(BaseAPIClient):
         """
         Make an authenticated API request.
         """
-        client = self._ensure_client()
-
         if not self.access_token:
             raise NetatmoAPIError("No access token available")
 
-        response = await client.get(
+        response = await self.client.get(
             f"{API_URL}/{endpoint}",
             params=params or {},
             headers={"Authorization": f"Bearer {self.access_token}"},
