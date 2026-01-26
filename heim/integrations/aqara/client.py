@@ -1,5 +1,4 @@
 import hashlib
-import os
 import string
 import time
 from collections.abc import Iterable
@@ -9,6 +8,7 @@ from typing import Any, Self, TypeVar
 import httpx
 
 from ...accounts.utils import get_random_string
+from ..common import getenv
 from .exceptions import AqaraAPIError, ExpiredAccessToken
 from .types import (
     AccessTokenResult,
@@ -210,13 +210,6 @@ class AqaraClient:
             raise AqaraAPIError("No result in response", parsed_response)
 
         return parsed_response.result
-
-
-def getenv(key: str) -> str:
-    if value := os.getenv(key):
-        return value
-
-    raise KeyError(f"Environment variable {key} not set")
 
 
 def get_nonce(length: int) -> str:

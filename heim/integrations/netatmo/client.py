@@ -1,10 +1,10 @@
-import os
 from datetime import UTC, datetime
 from typing import Any, Self
 
 import httpx
 import structlog
 
+from ..common import getenv
 from .exceptions import (
     ExpiredAccessToken,
     InvalidGrant,
@@ -265,10 +265,3 @@ class NetatmoClient:
 
         response.raise_for_status()
         return response.json()
-
-
-def getenv(key: str) -> str:
-    if value := os.getenv(key):
-        return value
-
-    raise KeyError(f"Environment variable {key} not set")

@@ -64,10 +64,11 @@ async def update_aqara_account(
     if not changed_fields:
         return account
 
-    update_sql = ", ".join(f"{field}=${i}" for i, field in enumerate(changed_fields, 1))
+    update_sql = ", ".join(f"{field}=${i}" for i, field in enumerate(changed_fields, 2))
 
     await db.execute(
-        f"UPDATE aqara_account SET {update_sql}",
+        f"UPDATE aqara_account SET {update_sql} WHERE id = $1",
+        account.id,
         *changed_fields.values(),
     )
 
