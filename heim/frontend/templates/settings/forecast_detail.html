@@ -2,36 +2,34 @@
 
 {% block content %}
 <nav aria-label="breadcrumb">
-  <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="/settings/forecasts/">Forecasts</a></li>
-    <li class="breadcrumb-item active" aria-current="page">{{ forecast.name or '(unnamed)' }}</li>
-  </ol>
+  <ul>
+    <li><a href="/settings/forecasts/">Forecasts</a></li>
+    <li>{{ forecast.name or '(unnamed)' }}</li>
+  </ul>
 </nav>
 
-<h2>Edit Forecast</h2>
-<p class="text-body-secondary">Update the details for this forecast.</p>
+<hgroup>
+  <h2>Edit Forecast</h2>
+  <p>Update the details for this forecast.</p>
+</hgroup>
 
-<div class="row">
-  <div class="col-md-6">
-    <form method="post" action="/settings/forecasts/{{ forecast.id }}/">
-      <div class="mb-3">
-        <label for="name" class="form-label">Name</label>
-        <input type="text" class="form-control" id="name" name="name" required value="{{ forecast.name or '' }}">
-        <div class="form-text">A descriptive name for this forecast.</div>
-      </div>
+<form method="post" action="/settings/forecasts/{{ forecast.id }}/" style="max-width: 500px;">
+  <label for="name">
+    Name
+    <input type="text" id="name" name="name" required value="{{ forecast.name or '' }}">
+    <small>A descriptive name for this forecast.</small>
+  </label>
 
-      <div class="mb-3">
-        <label class="form-label">Location</label>
-        <input type="text" class="form-control" value="{{ forecast.location_name }}" disabled>
-        <div class="form-text">Location cannot be changed after forecast creation.</div>
-      </div>
+  <label>
+    Location
+    <input type="text" value="{{ forecast.location_name }}" disabled>
+    <small>Location cannot be changed after forecast creation.</small>
+  </label>
 
-      <div class="d-flex gap-2">
-        <button type="submit" class="btn btn-primary">Save Changes</button>
-        <a href="/settings/forecasts/" class="btn btn-outline-secondary">Cancel</a>
-        <a href="/{{ forecast.location_id }}/" class="btn btn-outline-primary ms-auto">View Dashboard</a>
-      </div>
-    </form>
+  <div role="group">
+    <button type="submit">Save Changes</button>
+    <a href="/settings/forecasts/" role="button" class="secondary">Cancel</a>
+    <a href="/{{ forecast.location_id }}/" role="button" class="outline">View Dashboard</a>
   </div>
-</div>
+</form>
 {% endblock %}

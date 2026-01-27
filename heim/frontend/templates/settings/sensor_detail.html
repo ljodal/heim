@@ -2,63 +2,63 @@
 
 {% block content %}
 <nav aria-label="breadcrumb">
-  <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="/settings/sensors/">Sensors</a></li>
-    <li class="breadcrumb-item active" aria-current="page">{{ sensor.name or '(unnamed)' }}</li>
-  </ol>
+  <ul>
+    <li><a href="/settings/sensors/">Sensors</a></li>
+    <li>{{ sensor.name or '(unnamed)' }}</li>
+  </ul>
 </nav>
 
-<h2>Edit Sensor</h2>
-<p class="text-body-secondary">Update the details for this sensor.</p>
+<hgroup>
+  <h2>Edit Sensor</h2>
+  <p>Update the details for this sensor.</p>
+</hgroup>
 
-<div class="row">
-  <div class="col-md-6">
-    <form method="post" action="/settings/sensors/{{ sensor.id }}/">
-      <div class="mb-3">
-        <label for="name" class="form-label">Name</label>
-        <input type="text" class="form-control" id="name" name="name" required value="{{ sensor.name or '' }}">
-        <div class="form-text">A descriptive name for this sensor.</div>
-      </div>
+<form method="post" action="/settings/sensors/{{ sensor.id }}/" style="max-width: 500px;">
+  <label for="name">
+    Name
+    <input type="text" id="name" name="name" required value="{{ sensor.name or '' }}">
+    <small>A descriptive name for this sensor.</small>
+  </label>
 
-      <div class="mb-3">
-        <label class="form-label">Location</label>
-        <input type="text" class="form-control" value="{{ sensor.location_name }}" disabled>
-        <div class="form-text">Location cannot be changed after sensor creation.</div>
-      </div>
+  <label>
+    Location
+    <input type="text" value="{{ sensor.location_name }}" disabled>
+    <small>Location cannot be changed after sensor creation.</small>
+  </label>
 
-      <div class="mb-3 form-check">
-        <input type="checkbox" class="form-check-input" id="is_outdoor" name="is_outdoor" value="true" {% if sensor.is_outdoor %}checked{% endif %}>
-        <label class="form-check-label" for="is_outdoor">Outdoor sensor</label>
-        <div class="form-text">Mark this sensor as outdoor to use it for outdoor temperature readings.</div>
-      </div>
+  <fieldset>
+    <label>
+      <input type="checkbox" id="is_outdoor" name="is_outdoor" value="true" {% if sensor.is_outdoor %}checked{% endif %}>
+      Outdoor sensor
+    </label>
+    <small>Mark this sensor as outdoor to use it for outdoor temperature readings.</small>
+  </fieldset>
 
-      <div class="mb-3">
-        <label for="color" class="form-label">Chart color</label>
-        <div class="input-group" style="max-width: 200px;">
-          <input type="color" class="form-control form-control-color" id="color-picker" value="{{ sensor.color or '#808080' }}" title="Choose color">
-          <input type="text" class="form-control" id="color" name="color" value="{{ sensor.color or '' }}" placeholder="#rrggbb">
-        </div>
-        <div class="form-text">Color to use in charts. Leave empty for auto-generated color.</div>
-      </div>
-      <script>
-        // Sync color picker with text input
-        const colorPicker = document.getElementById('color-picker');
-        const colorInput = document.getElementById('color');
-        colorPicker.addEventListener('input', (e) => {
-          colorInput.value = e.target.value;
-        });
-        colorInput.addEventListener('input', (e) => {
-          if (/^#[0-9A-Fa-f]{6}$/.test(e.target.value)) {
-            colorPicker.value = e.target.value;
-          }
-        });
-      </script>
+  <label for="color">
+    Chart color
+    <div style="display: flex; gap: 0.5rem; max-width: 250px;">
+      <input type="color" id="color-picker" value="{{ sensor.color or '#808080' }}" title="Choose color" style="width: 60px; padding: 0.25rem;">
+      <input type="text" id="color" name="color" value="{{ sensor.color or '' }}" placeholder="#rrggbb">
+    </div>
+    <small>Color to use in charts. Leave empty for auto-generated color.</small>
+  </label>
+  <script>
+    // Sync color picker with text input
+    const colorPicker = document.getElementById('color-picker');
+    const colorInput = document.getElementById('color');
+    colorPicker.addEventListener('input', (e) => {
+      colorInput.value = e.target.value;
+    });
+    colorInput.addEventListener('input', (e) => {
+      if (/^#[0-9A-Fa-f]{6}$/.test(e.target.value)) {
+        colorPicker.value = e.target.value;
+      }
+    });
+  </script>
 
-      <div class="d-flex gap-2">
-        <button type="submit" class="btn btn-primary">Save Changes</button>
-        <a href="/settings/sensors/" class="btn btn-outline-secondary">Cancel</a>
-      </div>
-    </form>
+  <div role="group">
+    <button type="submit">Save Changes</button>
+    <a href="/settings/sensors/" role="button" class="secondary">Cancel</a>
   </div>
-</div>
+</form>
 {% endblock %}
