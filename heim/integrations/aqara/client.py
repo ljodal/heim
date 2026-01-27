@@ -207,7 +207,7 @@ class AqaraClient(BaseAPIClient):
     ) -> T:
         response.raise_for_status()
 
-        parsed_response = self._decode_json(response, response_type)
+        parsed_response = response_type.model_validate_json(response.text)
 
         if parsed_response.code == 108:
             raise ExpiredAccessToken("Access token has expired", parsed_response)

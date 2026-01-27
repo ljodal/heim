@@ -112,8 +112,17 @@ class Station(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
 
-class StationsDataResponse(BaseModel):
-    """Response from /api/getstationsdata endpoint."""
+class ApiResponse[T](BaseModel):
+    """Generic API response wrapper."""
+
+    body: T
+    status: str
+    time_exec: float | None = None
+    time_server: int | None = None
+
+
+class StationsData(BaseModel):
+    """Body from /api/getstationsdata endpoint."""
 
     devices: list[Station]
     user: dict[str, Any] | None = None
@@ -129,12 +138,3 @@ class MeasureBatch(BaseModel):
     def timestamps(self) -> list[int]:
         """Get the timestamp for each value in the batch."""
         return [self.beg_time + (i * self.step_time) for i in range(len(self.value))]
-
-
-class MeasureResponse(BaseModel):
-    """Response from /api/getmeasure endpoint."""
-
-    body: list[MeasureBatch]
-    status: str
-    time_exec: float | None = None
-    time_server: int | None = None

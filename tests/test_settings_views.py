@@ -13,7 +13,7 @@ from heim.integrations.netatmo.queries import (
     create_netatmo_sensor,
     get_netatmo_sensors,
 )
-from heim.integrations.netatmo.types import Module, Station, StationsDataResponse
+from heim.integrations.netatmo.types import Module, Station
 
 pytestmark = pytest.mark.asyncio
 
@@ -200,12 +200,10 @@ async def test_devices_shows_stations(
     mock_station: Station,
 ) -> None:
     """Shows available Netatmo devices."""
-    mock_response = StationsDataResponse(devices=[mock_station])
-
     with patch(
         "heim.frontend.settings._get_netatmo_stations",
         new_callable=AsyncMock,
-        return_value=mock_response.devices,
+        return_value=[mock_station],
     ):
         response = await browser_client.get("/settings/netatmo/devices/")
 
@@ -223,12 +221,10 @@ async def test_devices_shows_add_forms(
     mock_station: Station,
 ) -> None:
     """Shows add forms for each device."""
-    mock_response = StationsDataResponse(devices=[mock_station])
-
     with patch(
         "heim.frontend.settings._get_netatmo_stations",
         new_callable=AsyncMock,
-        return_value=mock_response.devices,
+        return_value=[mock_station],
     ):
         response = await browser_client.get("/settings/netatmo/devices/")
 
@@ -257,12 +253,10 @@ async def test_devices_marks_registered_as_added(
         station_id="70:ee:50:aa:bb:cc",
     )
 
-    mock_response = StationsDataResponse(devices=[mock_station])
-
     with patch(
         "heim.frontend.settings._get_netatmo_stations",
         new_callable=AsyncMock,
-        return_value=mock_response.devices,
+        return_value=[mock_station],
     ):
         response = await browser_client.get("/settings/netatmo/devices/")
 
@@ -277,12 +271,10 @@ async def test_devices_no_locations_warning(
     mock_station: Station,
 ) -> None:
     """Shows warning when no locations are configured."""
-    mock_response = StationsDataResponse(devices=[mock_station])
-
     with patch(
         "heim.frontend.settings._get_netatmo_stations",
         new_callable=AsyncMock,
-        return_value=mock_response.devices,
+        return_value=[mock_station],
     ):
         response = await browser_client.get("/settings/netatmo/devices/")
 

@@ -9,7 +9,6 @@ from typing import Any, Concatenate, Protocol, Self, cast
 
 import httpx
 import structlog
-from pydantic import BaseModel
 
 from ... import db
 from .exceptions import ExpiredAccessToken
@@ -131,9 +130,3 @@ class BaseAPIClient(ABC):
                     expires_at=datetime.now(UTC)
                     + timedelta(seconds=response.expires_in),
                 )
-
-    def _decode_json[T: BaseModel](
-        self, response: httpx.Response, response_type: type[T]
-    ) -> T:
-        """Decode a JSON response into a Pydantic model."""
-        return response_type.model_validate_json(response.text)

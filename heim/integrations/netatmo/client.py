@@ -1,5 +1,4 @@
 from datetime import UTC, datetime
-from typing import Any
 
 import structlog
 
@@ -13,8 +12,9 @@ from .exceptions import (
 )
 from .models import NetatmoAccount
 from .types import (
-    MeasureResponse,
-    StationsDataResponse,
+    ApiResponse,
+    MeasureBatch,
+    StationsData,
     TokenResponse,
 )
 
@@ -136,24 +136,21 @@ class NetatmoClient(BaseAPIClient):
                 f"Token request failed: {error} - {error_description}"
             )
 
-        return self._decode_json(response, TokenResponse)
+        return TokenResponse.model_validate_json(response.text)
 
     ################
     # Station data #
     ################
 
-    async def get_stations_data(
-        self, *, device_id: str | None = None
-    ) -> StationsDataResponse:
-        """
-        Get data from all weather stations, or a specific device.
-        """
+    async def get_stations_data(self, *, device_id: str | None = None) -> StationsData:
+        """Get data from all weather stations, or a specific device."""
         params: dict[str, str] = {}
         if device_id:
             params["device_id"] = device_id
 
-        data = await self._api_request("getstationsdata", params=params)
-        return StationsDataResponse.model_validate(data["body"])
+        return await self._api_request(
+            "getstationsdata", ApiResponse[StationsData], params=params
+        )
 
     async def get_measure(
         self,
@@ -202,17 +199,15 @@ class NetatmoClient(BaseAPIClient):
             if end_timestamp:
                 params["date_end"] = str(end_timestamp)
 
-            data = await self._api_request("getmeasure", params=params)
-            response = MeasureResponse.model_validate(data)
-
-            if not response.body:
-                break
+            response = await self._api_request(
+                "getmeasure", ApiResponse[list[MeasureBatch]], params=params
+            )
 
             # Track the latest timestamp we've seen for pagination
             latest_timestamp = 0
             batch_count = 0
 
-            for batch in response.body:
+            for batch in response:
                 timestamps = batch.timestamps()
                 for idx, values in enumerate(batch.value):
                     ts = timestamps[idx]
@@ -245,12 +240,14 @@ class NetatmoClient(BaseAPIClient):
     # Internal helpers #
     ####################
 
-    async def _api_request(
-        self, endpoint: str, *, params: dict[str, str] | None = None
-    ) -> Any:
-        """
-        Make an authenticated API request.
-        """
+    async def _api_request[T](
+        self,
+        endpoint: str,
+        response_type: type[ApiResponse[T]],
+        *,
+        params: dict[str, str] | None = None,
+    ) -> T:
+        """Make an authenticated API request."""
         if not self.access_token:
             raise NetatmoAPIError("No access token available")
 
@@ -271,4 +268,5 @@ class NetatmoClient(BaseAPIClient):
             raise ExpiredAccessToken("Access token has expired")
 
         response.raise_for_status()
-        return response.json()
+        parsed_response = response_type.model_validate_json(response.text)
+        return parsed_response.body
