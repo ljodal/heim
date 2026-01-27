@@ -40,10 +40,14 @@ class ChargerObservation:
 OBSERVATION_MAPPING: dict[int, tuple[Attribute, float]] = {
     # Power observations
     120: (Attribute.POWER, 1000),  # totalPower (kW -> W)
-    # Current observations
-    182: (Attribute.CURRENT, 1000),  # outputCurrent (A -> mA)
-    # Voltage observations (average of phases)
-    # We'll handle voltage specially since we need to average
+    # Per-phase current observations (A -> mA)
+    183: (Attribute.CURRENT_L1, 1000),  # inCurrentT2 (L1)
+    184: (Attribute.CURRENT_L2, 1000),  # inCurrentT3 (L2)
+    185: (Attribute.CURRENT_L3, 1000),  # inCurrentT4 (L3)
+    # Per-phase voltage observations (V -> mV)
+    193: (Attribute.VOLTAGE_L1, 1000),  # inVoltageT1T2 (L1)
+    194: (Attribute.VOLTAGE_L2, 1000),  # inVoltageT2T3 (L2)
+    195: (Attribute.VOLTAGE_L3, 1000),  # inVoltageT3T4 (L3)
     # Energy observations
     124: (Attribute.ENERGY, 1000),  # sessionEnergy (kWh -> Wh)
 }

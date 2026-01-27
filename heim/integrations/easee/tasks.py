@@ -46,24 +46,23 @@ async def update_charger_state(
     if state.session_energy is not None:
         values.append((Attribute.ENERGY, now, state.session_energy * 1000))
 
-    # Output current in milliamps (API returns amps)
-    if state.output_current is not None:
-        values.append((Attribute.CURRENT, now, state.output_current * 1000))
+    # Per-phase currents in milliamps (API returns amps)
+    # inCurrentT2/T3/T4 correspond to L1/L2/L3
+    if state.in_current_t2 is not None:
+        values.append((Attribute.CURRENT_L1, now, state.in_current_t2 * 1000))
+    if state.in_current_t3 is not None:
+        values.append((Attribute.CURRENT_L2, now, state.in_current_t3 * 1000))
+    if state.in_current_t4 is not None:
+        values.append((Attribute.CURRENT_L3, now, state.in_current_t4 * 1000))
 
-    # Average voltage in millivolts (API returns volts)
-    # We take the average of available phase voltages
-    voltages = [
-        v
-        for v in [
-            state.in_voltage_t1_t2,
-            state.in_voltage_t2_t3,
-            state.in_voltage_t3_t4,
-        ]
-        if v is not None
-    ]
-    if voltages:
-        avg_voltage = sum(voltages) / len(voltages)
-        values.append((Attribute.VOLTAGE, now, avg_voltage * 1000))
+    # Per-phase voltages in millivolts (API returns volts)
+    # These are line-to-line voltages: T1-T2, T2-T3, T3-T4 correspond to L1, L2, L3
+    if state.in_voltage_t1_t2 is not None:
+        values.append((Attribute.VOLTAGE_L1, now, state.in_voltage_t1_t2 * 1000))
+    if state.in_voltage_t2_t3 is not None:
+        values.append((Attribute.VOLTAGE_L2, now, state.in_voltage_t2_t3 * 1000))
+    if state.in_voltage_t3_t4 is not None:
+        values.append((Attribute.VOLTAGE_L3, now, state.in_voltage_t3_t4 * 1000))
 
     if values:
         await save_measurements(sensor_id=sensor_id, values=values)

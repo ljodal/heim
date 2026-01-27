@@ -2,9 +2,15 @@
  * Easee EV charger integration
  */
 
--- Add new attribute types for EV charging data
+-- Add new attribute types for EV charging and three-phase power data
 alter type attribute add value 'current';
+alter type attribute add value 'current l1';
+alter type attribute add value 'current l2';
+alter type attribute add value 'current l3';
 alter type attribute add value 'voltage';
+alter type attribute add value 'voltage l1';
+alter type attribute add value 'voltage l2';
+alter type attribute add value 'voltage l3';
 
 -- Easee account credentials
 create table easee_account (
