@@ -1,15 +1,14 @@
-from datetime import datetime
-from typing import Any, Self
+"""Easee API client."""
 
-import httpx
+from datetime import datetime
+from typing import Any
+
 import structlog
 
-from .exceptions import (
-    EaseeAPIError,
-    ExpiredAccessToken,
-    InvalidCredentials,
-    InvalidRefreshToken,
-)
+from ..common import BaseAPIClient, ExpiredAccessToken
+from ..common.client import OAuthAccount
+from .exceptions import EaseeAPIError, InvalidCredentials, InvalidRefreshToken
+from .models import EaseeAccount
 from .types import (
     Charger,
     ChargerState,
@@ -25,21 +24,42 @@ logger = structlog.get_logger()
 API_URL = "https://api.easee.com"
 
 
-class EaseeClient:
+class EaseeClient(BaseAPIClient):
     """
     A client for communicating with the Easee API.
 
     Uses httpx for async HTTP requests.
     """
 
-    def __init__(self, *, access_token: str | None = None) -> None:
-        self.access_token = access_token
-        self.client: httpx.AsyncClient | None = None
+    # ======================
+    # OAuth account methods
+    # ======================
 
-    async def close(self) -> None:
-        if self.client:
-            await self.client.aclose()
-            self.client = None
+    @classmethod
+    async def get_account(
+        cls, account_id: int, *, for_update: bool = False
+    ) -> EaseeAccount:
+        from .queries import get_easee_account
+
+        return await get_easee_account(account_id=account_id, for_update=for_update)
+
+    @classmethod
+    async def update_account(
+        cls,
+        account: OAuthAccount,
+        *,
+        refresh_token: str,
+        access_token: str,
+        expires_at: datetime,
+    ) -> None:
+        from .queries import update_easee_account
+
+        await update_easee_account(
+            account,  # type: ignore[arg-type]
+            refresh_token=refresh_token,
+            access_token=access_token,
+            expires_at=expires_at,
+        )
 
     ########
     # Auth #
@@ -49,9 +69,6 @@ class EaseeClient:
         """
         Login with username and password to get access tokens.
         """
-        if not self.client:
-            self.client = httpx.AsyncClient()
-
         response = await self.client.post(
             f"{API_URL}/api/accounts/login",
             json={"userName": username, "password": password},
@@ -71,9 +88,6 @@ class EaseeClient:
         """
         Refresh an access token using a refresh token.
         """
-        if not self.client:
-            self.client = httpx.AsyncClient()
-
         response = await self.client.post(
             f"{API_URL}/api/accounts/refresh_token",
             json={
@@ -167,18 +181,6 @@ class EaseeClient:
         )
         return [HourlyUsage.model_validate(u) for u in data]
 
-    ###################
-    # Context manager #
-    ###################
-
-    async def __aenter__(self) -> Self:
-        if not self.client:
-            self.client = httpx.AsyncClient()
-        return self
-
-    async def __aexit__(self, *args: object) -> None:
-        await self.close()
-
     ####################
     # Internal helpers #
     ####################
@@ -194,9 +196,6 @@ class EaseeClient:
         """
         Make an authenticated API request.
         """
-        if not self.client:
-            self.client = httpx.AsyncClient()
-
         if not self.access_token:
             raise EaseeAPIError("No access token available")
 

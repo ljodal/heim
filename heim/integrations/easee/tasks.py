@@ -7,13 +7,12 @@ from ...sensors.types import Attribute
 from ...tasks import task
 from .client import EaseeClient
 from .queries import get_easee_charger
-from .services import with_easee_client
 
 logger = structlog.get_logger()
 
 
 @task(name="update-easee-charger-state", allow_skip=True, atomic=False)
-@with_easee_client
+@EaseeClient.authenticated()
 async def update_charger_state(
     client: EaseeClient,
     *,
@@ -80,7 +79,7 @@ async def update_charger_state(
 
 
 @task(name="update-easee-hourly-usage", allow_skip=True, atomic=False)
-@with_easee_client
+@EaseeClient.authenticated()
 async def update_hourly_usage(
     client: EaseeClient,
     *,

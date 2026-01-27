@@ -1,9 +1,18 @@
-class EaseeAPIError(Exception):
+"""Easee API exceptions."""
+
+from ..common import ExpiredAccessToken, IntegrationAPIError
+
+# Re-export common exceptions
+__all__ = [
+    "EaseeAPIError",
+    "ExpiredAccessToken",
+    "InvalidCredentials",
+    "InvalidRefreshToken",
+]
+
+
+class EaseeAPIError(IntegrationAPIError):
     """Base exception for Easee API errors."""
-
-
-class ExpiredAccessToken(EaseeAPIError):
-    """Access token has expired and needs to be refreshed."""
 
 
 class InvalidCredentials(EaseeAPIError):

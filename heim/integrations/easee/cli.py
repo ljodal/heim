@@ -9,7 +9,6 @@ from .queries import (
     create_easee_charger,
     get_easee_chargers,
 )
-from .services import with_easee_client
 from .tasks import update_charger_state, update_hourly_usage
 
 
@@ -64,7 +63,7 @@ def chargers() -> None:
 @chargers.command(name="list")
 @click.option("--account-id", "-a", required=True, type=int, help="Account ID")
 @db.setup()
-@with_easee_client
+@EaseeClient.authenticated()
 async def list_chargers_remote(client: EaseeClient, *, account_id: int) -> None:
     """List all chargers available from the Easee API."""
     chargers_list = await client.get_chargers()
@@ -81,7 +80,7 @@ async def list_chargers_remote(client: EaseeClient, *, account_id: int) -> None:
 @click.option("--account-id", "-a", required=True, type=int, help="Account ID")
 @click.option("--charger-id", required=True, help="Easee charger ID")
 @db.setup()
-@with_easee_client
+@EaseeClient.authenticated()
 async def get_charger_state_cmd(
     client: EaseeClient, *, account_id: int, charger_id: str
 ) -> None:
