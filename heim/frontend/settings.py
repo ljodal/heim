@@ -357,12 +357,19 @@ async def sensor_detail(
         "name": sensor_data[1],
         "location_id": sensor_data[2],
         "location_name": sensor_data[3],
-        "is_outdoor": sensor_data[4],
-        "color": sensor_data[5],
     }
+
+    # Get current zone assignment
+    current_zone_data = await get_sensor_current_zone(
+        account_id=account_id, sensor_id=sensor_id
+    )
+    current_zone = None
+    if current_zone_data:
+        current_zone = {"id": current_zone_data[0], "name": current_zone_data[1]}
 
     context = {
         "sensor": sensor,
+        "current_zone": current_zone,
         "active_tab": "sensors",
     }
     return templates.TemplateResponse(request, "settings/sensor_detail.html", context)
@@ -375,17 +382,9 @@ async def sensor_update_view(
     messages: Messages,
     sensor_id: Annotated[int, Path()],
     name: Annotated[str, Form()],
-    is_outdoor: Annotated[str | None, Form()] = None,
-    color: Annotated[str | None, Form()] = None,
 ) -> RedirectResponse:
     """Update a sensor."""
-    await update_sensor(
-        account_id=account_id,
-        sensor_id=sensor_id,
-        name=name,
-        is_outdoor=is_outdoor == "true",
-        color=color,
-    )
+    await update_sensor(account_id=account_id, sensor_id=sensor_id, name=name)
     messages.success(f"Sensor '{name}' updated successfully!")
     return RedirectResponse(
         url="/settings/sensors/", status_code=status.HTTP_303_SEE_OTHER
@@ -559,7 +558,7 @@ async def zone_detail(
     # Get available sensors for assignment
     all_sensors = await get_all_sensors(account_id=account_id)
     available_sensors = []
-    for sensor_id, name, _location, _outdoor, _source, _color in all_sensors:
+    for sensor_id, name, _location, _source in all_sensors:
         current_zone = await get_sensor_current_zone(
             account_id=account_id, sensor_id=sensor_id
         )

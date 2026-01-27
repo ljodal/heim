@@ -5,31 +5,22 @@
   <h2>Sensors</h2>
 </div>
 
-<p class="text-body-secondary">Manage your sensors. Edit names and configure which sensors are outdoor sensors.</p>
+<p class="text-body-secondary">Manage your physical sensor devices. Assign sensors to zones in <a href="/settings/zones/">zone settings</a> to see their data in charts.</p>
 
 {% if sensors %}
 <div class="table-responsive">
   <table class="table table-hover">
     <thead>
       <tr>
-        <th>Color</th>
         <th>Name</th>
         <th>Location</th>
         <th>Source</th>
-        <th>Outdoor</th>
         <th>Actions</th>
       </tr>
     </thead>
     <tbody>
-      {% for sensor_id, name, location_name, is_outdoor, source, color in sensors %}
+      {% for sensor_id, name, location_name, source in sensors %}
       <tr>
-        <td>
-          {% if color %}
-            <span style="display: inline-block; width: 20px; height: 20px; background-color: {{ color }}; border-radius: 3px; vertical-align: middle;"></span>
-          {% else %}
-            <span class="text-body-secondary">—</span>
-          {% endif %}
-        </td>
         <td>
           <a href="/settings/sensors/{{ sensor_id }}/">{{ name or '(unnamed)' }}</a>
         </td>
@@ -41,11 +32,6 @@
             <span class="badge bg-success">Aqara</span>
           {% else %}
             <span class="badge bg-secondary">Manual</span>
-          {% endif %}
-        </td>
-        <td>
-          {% if is_outdoor %}
-            <span class="badge bg-primary">Outdoor</span>
           {% endif %}
         </td>
         <td>

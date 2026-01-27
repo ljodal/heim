@@ -17,42 +17,29 @@
       <div class="mb-3">
         <label for="name" class="form-label">Name</label>
         <input type="text" class="form-control" id="name" name="name" required value="{{ sensor.name or '' }}">
-        <div class="form-text">A descriptive name for this sensor.</div>
+        <div class="form-text">A descriptive name for this sensor (the physical device).</div>
       </div>
 
       <div class="mb-3">
         <label class="form-label">Location</label>
         <input type="text" class="form-control" value="{{ sensor.location_name }}" disabled>
-        <div class="form-text">Location cannot be changed after sensor creation.</div>
       </div>
 
-      <div class="mb-3 form-check">
-        <input type="checkbox" class="form-check-input" id="is_outdoor" name="is_outdoor" value="true" {% if sensor.is_outdoor %}checked{% endif %}>
-        <label class="form-check-label" for="is_outdoor">Outdoor sensor</label>
-        <div class="form-text">Mark this sensor as outdoor to use it for outdoor temperature readings.</div>
-      </div>
-
+      {% if current_zone %}
       <div class="mb-3">
-        <label for="color" class="form-label">Chart color</label>
-        <div class="input-group" style="max-width: 200px;">
-          <input type="color" class="form-control form-control-color" id="color-picker" value="{{ sensor.color or '#808080' }}" title="Choose color">
-          <input type="text" class="form-control" id="color" name="color" value="{{ sensor.color or '' }}" placeholder="#rrggbb">
+        <label class="form-label">Current Zone</label>
+        <div>
+          <a href="/settings/zones/{{ current_zone.id }}/" class="btn btn-outline-primary btn-sm">
+            {{ current_zone.name }}
+          </a>
         </div>
-        <div class="form-text">Color to use in charts. Leave empty for auto-generated color.</div>
+        <div class="form-text">This sensor is assigned to a zone. Manage zone assignments in <a href="/settings/zones/">zone settings</a>.</div>
       </div>
-      <script>
-        // Sync color picker with text input
-        const colorPicker = document.getElementById('color-picker');
-        const colorInput = document.getElementById('color');
-        colorPicker.addEventListener('input', (e) => {
-          colorInput.value = e.target.value;
-        });
-        colorInput.addEventListener('input', (e) => {
-          if (/^#[0-9A-Fa-f]{6}$/.test(e.target.value)) {
-            colorPicker.value = e.target.value;
-          }
-        });
-      </script>
+      {% else %}
+      <div class="alert alert-warning">
+        This sensor is not assigned to any zone. Assign it in <a href="/settings/zones/">zone settings</a> to see its data in charts.
+      </div>
+      {% endif %}
 
       <div class="d-flex gap-2">
         <button type="submit" class="btn btn-primary">Save Changes</button>
