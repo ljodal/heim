@@ -2,7 +2,7 @@ from datetime import UTC, datetime
 
 import structlog
 
-from ..common import BaseAPIClient, getenv
+from ..common import BaseAPIClient, getenv, random_delay, with_retry
 from ..common.client import OAuthAccount
 from .exceptions import (
     ExpiredAccessToken,
@@ -234,6 +234,9 @@ class NetatmoClient(BaseAPIClient):
                 next_begin=current_begin,
             )
 
+            # Add random delay between paginated requests to avoid overwhelming the API
+            await random_delay()
+
         return result
 
     ####################
@@ -251,22 +254,25 @@ class NetatmoClient(BaseAPIClient):
         if not self.access_token:
             raise NetatmoAPIError("No access token available")
 
-        response = await self.client.get(
-            f"{API_URL}/{endpoint}",
-            params=params or {},
-            headers={"Authorization": f"Bearer {self.access_token}"},
-        )
+        async def do_request() -> T:
+            response = await self.client.get(
+                f"{API_URL}/{endpoint}",
+                params=params or {},
+                headers={"Authorization": f"Bearer {self.access_token}"},
+            )
 
-        if response.status_code == 403:
-            error_data = response.json()
-            error = error_data.get("error", {})
-            if isinstance(error, dict) and error.get("code") == 3:
+            if response.status_code == 403:
+                error_data = response.json()
+                error = error_data.get("error", {})
+                if isinstance(error, dict) and error.get("code") == 3:
+                    raise ExpiredAccessToken("Access token has expired")
+                raise NetatmoAPIError(f"API request forbidden: {error}")
+
+            if response.status_code == 401:
                 raise ExpiredAccessToken("Access token has expired")
-            raise NetatmoAPIError(f"API request forbidden: {error}")
 
-        if response.status_code == 401:
-            raise ExpiredAccessToken("Access token has expired")
+            response.raise_for_status()
+            parsed_response = response_type.model_validate_json(response.text)
+            return parsed_response.body
 
-        response.raise_for_status()
-        parsed_response = response_type.model_validate_json(response.text)
-        return parsed_response.body
+        return await with_retry(do_request, operation_name=endpoint)

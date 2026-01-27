@@ -5,6 +5,7 @@ import structlog
 from ...sensors.queries import save_measurements
 from ...sensors.types import Attribute
 from ...tasks import task
+from ..common import random_delay
 from .client import AqaraClient
 from .queries import get_aqara_sensor
 from .types import QueryResourceHistoryResult
@@ -111,6 +112,9 @@ async def update_sensor_data(
             batch_size=len(result.data),
             total=total_measurements,
         )
+
+        # Add random delay between requests to avoid overwhelming the API
+        await random_delay()
 
     logger.info(
         "Finished sensor data fetch",

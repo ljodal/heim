@@ -3,12 +3,11 @@ import string
 import time
 from collections.abc import Iterable
 from datetime import datetime
-from typing import TypeVar
 
 import httpx
 
 from ...accounts.utils import get_random_string
-from ..common import BaseAPIClient, getenv
+from ..common import BaseAPIClient, getenv, with_retry
 from ..common.client import OAuthAccount
 from .exceptions import AqaraAPIError, ExpiredAccessToken
 from .models import AqaraAccount
@@ -165,20 +164,21 @@ class AqaraClient(BaseAPIClient):
     # Internal helpers #
     ####################
 
-    T = TypeVar("T")
-
-    async def _request(
+    async def _request[T](
         self, intent: Intent, data: IntentData, response_type: type[BaseResponse[T]]
     ) -> T:
-        request = self.client.build_request(
-            "POST",
-            f"https://{self.domain}/v3.0/open/api",
-            json={"intent": intent, "data": data},
-        )
-        self._prepare_auth(request)
+        async def do_request() -> T:
+            request = self.client.build_request(
+                "POST",
+                f"https://{self.domain}/v3.0/open/api",
+                json={"intent": intent, "data": data},
+            )
+            self._prepare_auth(request)
 
-        response = await self.client.send(request)
-        return self._check_response(response, response_type)
+            response = await self.client.send(request)
+            return self._check_response(response, response_type)
+
+        return await with_retry(do_request, operation_name=intent)
 
     def _prepare_auth(self, request: httpx.Request) -> None:
         timestamp = str(int(time.time() * 1000))
@@ -202,7 +202,7 @@ class AqaraClient(BaseAPIClient):
         request.headers["Nonce"] = nonce
         request.headers["Sign"] = signature
 
-    def _check_response(
+    def _check_response[T](
         self, response: httpx.Response, response_type: type[BaseResponse[T]]
     ) -> T:
         response.raise_for_status()
