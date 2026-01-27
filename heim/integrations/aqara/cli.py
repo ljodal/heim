@@ -5,7 +5,6 @@ import click
 from ... import db
 from .client import AqaraClient
 from .queries import create_aqara_account, create_aqara_sensor, get_aqara_sensors
-from .services import with_aqara_client
 from .tasks import update_sensor_data
 
 
@@ -77,7 +76,7 @@ def devices() -> None:
 @devices.command()
 @click.option("--account-id", "-a", type=int, help="Account id", required=True)
 @db.setup()
-@with_aqara_client
+@AqaraClient.authenticated()
 async def list(client: AqaraClient, *, account_id: int) -> None:
     """
     List all devices registered to the account.
@@ -92,7 +91,7 @@ async def list(client: AqaraClient, *, account_id: int) -> None:
 @click.argument("model")
 @click.option("--account-id", "-a", type=int, help="Account id", required=True)
 @db.setup()
-@with_aqara_client
+@AqaraClient.authenticated()
 async def resources(client: AqaraClient, *, account_id: int, model: str) -> None:
     """
     List all devices registered to the account.
@@ -111,7 +110,7 @@ async def resources(client: AqaraClient, *, account_id: int, model: str) -> None
 @click.option("--location-id", type=int, help="Location ID", required=True)
 @click.option("--account-id", "-a", type=int, help="Account id", required=True)
 @db.setup()
-@with_aqara_client
+@AqaraClient.authenticated()
 async def create_devices(
     client: AqaraClient, *, account_id: int, name: str, location_id: int, aqara_id: str
 ) -> None:

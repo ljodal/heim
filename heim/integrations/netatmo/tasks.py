@@ -7,7 +7,6 @@ from ...sensors.types import Attribute
 from ...tasks import task
 from .client import NetatmoClient
 from .queries import get_netatmo_sensor
-from .services import with_netatmo_client
 
 logger = structlog.get_logger()
 
@@ -41,7 +40,7 @@ MODULE_TYPE_ATTRIBUTES: dict[str, dict[str, Attribute]] = {
 
 
 @task(name="update-netatmo-sensor-data", allow_skip=True, atomic=False)
-@with_netatmo_client
+@NetatmoClient.authenticated()
 async def update_sensor_data(
     client: NetatmoClient,
     *,

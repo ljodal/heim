@@ -1,19 +1,20 @@
-import os
 from datetime import UTC, datetime
-from typing import Any, Self
 
-import httpx
 import structlog
 
+from ..common import BaseAPIClient, getenv
+from ..common.client import OAuthAccount
 from .exceptions import (
     ExpiredAccessToken,
     InvalidGrant,
     InvalidRefreshToken,
     NetatmoAPIError,
 )
+from .models import NetatmoAccount
 from .types import (
-    MeasureResponse,
-    StationsDataResponse,
+    ApiResponse,
+    MeasureBatch,
+    StationsData,
     TokenResponse,
 )
 
@@ -24,21 +25,45 @@ AUTH_URL = "https://api.netatmo.com/oauth2/token"
 API_URL = "https://api.netatmo.com/api"
 
 
-class NetatmoClient:
+class NetatmoClient(BaseAPIClient):
     """
     A client for communicating with the Netatmo API.
     """
 
     def __init__(self, *, access_token: str | None = None) -> None:
+        super().__init__(access_token=access_token)
         self.client_id = getenv("NETATMO_CLIENT_ID")
         self.client_secret = getenv("NETATMO_CLIENT_SECRET")
-        self.access_token = access_token
-        self.client: httpx.AsyncClient | None = None
 
-    async def close(self) -> None:
-        if self.client:
-            await self.client.aclose()
-            self.client = None
+    # ======================
+    # OAuth account methods
+    # ======================
+
+    @classmethod
+    async def get_account(
+        cls, account_id: int, *, for_update: bool = False
+    ) -> NetatmoAccount:
+        from .queries import get_netatmo_account
+
+        return await get_netatmo_account(account_id=account_id, for_update=for_update)
+
+    @classmethod
+    async def update_account(
+        cls,
+        account: OAuthAccount,
+        *,
+        refresh_token: str,
+        access_token: str,
+        expires_at: datetime,
+    ) -> None:
+        from .queries import update_netatmo_account
+
+        await update_netatmo_account(
+            account,  # type: ignore[arg-type]
+            refresh_token=refresh_token,
+            access_token=access_token,
+            expires_at=expires_at,
+        )
 
     ########
     # Auth #
@@ -69,9 +94,6 @@ class NetatmoClient:
         """
         Make a token request to the Netatmo OAuth endpoint.
         """
-        if not self.client:
-            self.client = httpx.AsyncClient()
-
         request_data = {
             "client_id": self.client_id,
             "client_secret": self.client_secret,
@@ -114,24 +136,21 @@ class NetatmoClient:
                 f"Token request failed: {error} - {error_description}"
             )
 
-        return TokenResponse.model_validate(response.json())
+        return TokenResponse.model_validate_json(response.text)
 
     ################
     # Station data #
     ################
 
-    async def get_stations_data(
-        self, *, device_id: str | None = None
-    ) -> StationsDataResponse:
-        """
-        Get data from all weather stations, or a specific device.
-        """
+    async def get_stations_data(self, *, device_id: str | None = None) -> StationsData:
+        """Get data from all weather stations, or a specific device."""
         params: dict[str, str] = {}
         if device_id:
             params["device_id"] = device_id
 
-        data = await self._api_request("getstationsdata", params=params)
-        return StationsDataResponse.model_validate(data["body"])
+        return await self._api_request(
+            "getstationsdata", ApiResponse[StationsData], params=params
+        )
 
     async def get_measure(
         self,
@@ -180,17 +199,15 @@ class NetatmoClient:
             if end_timestamp:
                 params["date_end"] = str(end_timestamp)
 
-            data = await self._api_request("getmeasure", params=params)
-            response = MeasureResponse.model_validate(data)
-
-            if not response.body:
-                break
+            response = await self._api_request(
+                "getmeasure", ApiResponse[list[MeasureBatch]], params=params
+            )
 
             # Track the latest timestamp we've seen for pagination
             latest_timestamp = 0
             batch_count = 0
 
-            for batch in response.body:
+            for batch in response:
                 timestamps = batch.timestamps()
                 for idx, values in enumerate(batch.value):
                     ts = timestamps[idx]
@@ -219,31 +236,18 @@ class NetatmoClient:
 
         return result
 
-    ###################
-    # Context manager #
-    ###################
-
-    async def __aenter__(self) -> Self:
-        if not self.client:
-            self.client = httpx.AsyncClient()
-        return self
-
-    async def __aexit__(self, *args: Any) -> None:
-        await self.close()
-
     ####################
     # Internal helpers #
     ####################
 
-    async def _api_request(
-        self, endpoint: str, *, params: dict[str, str] | None = None
-    ) -> Any:
-        """
-        Make an authenticated API request.
-        """
-        if not self.client:
-            self.client = httpx.AsyncClient()
-
+    async def _api_request[T](
+        self,
+        endpoint: str,
+        response_type: type[ApiResponse[T]],
+        *,
+        params: dict[str, str] | None = None,
+    ) -> T:
+        """Make an authenticated API request."""
         if not self.access_token:
             raise NetatmoAPIError("No access token available")
 
@@ -264,11 +268,5 @@ class NetatmoClient:
             raise ExpiredAccessToken("Access token has expired")
 
         response.raise_for_status()
-        return response.json()
-
-
-def getenv(key: str) -> str:
-    if value := os.getenv(key):
-        return value
-
-    raise KeyError(f"Environment variable {key} not set")
+        parsed_response = response_type.model_validate_json(response.text)
+        return parsed_response.body

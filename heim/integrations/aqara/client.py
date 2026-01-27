@@ -1,15 +1,17 @@
 import hashlib
-import os
 import string
 import time
 from collections.abc import Iterable
 from datetime import datetime
-from typing import Any, Self, TypeVar
+from typing import TypeVar
 
 import httpx
 
 from ...accounts.utils import get_random_string
+from ..common import BaseAPIClient, getenv
+from ..common.client import OAuthAccount
 from .exceptions import AqaraAPIError, ExpiredAccessToken
+from .models import AqaraAccount
 from .types import (
     AccessTokenResult,
     AuthCodeResult,
@@ -25,23 +27,47 @@ from .types import (
 )
 
 
-class AqaraClient:
+class AqaraClient(BaseAPIClient):
     """
     A client for communicating with the Aqara Open API.
     """
 
     def __init__(self, *, access_token: str | None = None) -> None:
+        super().__init__(access_token=access_token)
         self.app_id = getenv("AQARA_APP_ID")
         self.app_key = getenv("AQARA_APP_KEY")
         self.key_id = getenv("AQARA_KEY_ID")
         self.domain = getenv("AQARA_DOMAIN")
-        self.access_token = access_token
-        self.client: httpx.AsyncClient | None = None
 
-    async def close(self) -> None:
-        if self.client:
-            await self.client.aclose()
-            self.client = None
+    # ======================
+    # OAuth account methods
+    # ======================
+
+    @classmethod
+    async def get_account(
+        cls, account_id: int, *, for_update: bool = False
+    ) -> AqaraAccount:
+        from .queries import get_aqara_account
+
+        return await get_aqara_account(account_id=account_id, for_update=for_update)
+
+    @classmethod
+    async def update_account(
+        cls,
+        account: OAuthAccount,
+        *,
+        refresh_token: str,
+        access_token: str,
+        expires_at: datetime,
+    ) -> None:
+        from .queries import update_aqara_account
+
+        await update_aqara_account(
+            account,  # type: ignore[arg-type]
+            refresh_token=refresh_token,
+            access_token=access_token,
+            expires_at=expires_at,
+        )
 
     ########
     # Auth #
@@ -135,18 +161,6 @@ class AqaraClient:
             response_type=BaseResponse[QueryResourceHistoryResult],
         )
 
-    ###################
-    # Context manager #
-    ###################
-
-    async def __aenter__(self) -> Self:
-        if not self.client:
-            self.client = httpx.AsyncClient()
-        return self
-
-    async def __aexit__(self, *args: Any) -> None:
-        await self.close()
-
     ####################
     # Internal helpers #
     ####################
@@ -156,9 +170,6 @@ class AqaraClient:
     async def _request(
         self, intent: Intent, data: IntentData, response_type: type[BaseResponse[T]]
     ) -> T:
-        if not self.client:
-            self.client = httpx.AsyncClient()
-
         request = self.client.build_request(
             "POST",
             f"https://{self.domain}/v3.0/open/api",
@@ -210,13 +221,6 @@ class AqaraClient:
             raise AqaraAPIError("No result in response", parsed_response)
 
         return parsed_response.result
-
-
-def getenv(key: str) -> str:
-    if value := os.getenv(key):
-        return value
-
-    raise KeyError(f"Environment variable {key} not set")
 
 
 def get_nonce(length: int) -> str:

@@ -30,7 +30,6 @@ from ..integrations.netatmo.queries import (
     get_netatmo_sensors,
     has_netatmo_account,
 )
-from ..integrations.netatmo.services import with_netatmo_client
 from ..integrations.netatmo.tasks import (
     update_sensor_data as update_netatmo_sensor_data,
 )
@@ -269,7 +268,7 @@ async def netatmo_devices(
     return templates.TemplateResponse(request, "settings/netatmo_devices.html", context)
 
 
-@with_netatmo_client
+@NetatmoClient.authenticated()
 async def _get_netatmo_stations(client: NetatmoClient, *, account_id: int) -> list[Any]:
     """Fetch stations from Netatmo API."""
     data = await client.get_stations_data()
