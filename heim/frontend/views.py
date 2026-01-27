@@ -10,8 +10,8 @@ from ..accounts.utils import compare_password, hash_password
 from ..auth.dependencies import CookieSession
 from ..auth.queries import create_session, delete_session
 from ..forecasts.queries import get_forecast, get_instances, get_latest_forecast_values
-from ..sensors.queries import get_measurements_averaged, get_sensors
 from ..sensors.types import Attribute
+from ..zones.queries import get_zone_measurements_averaged, get_zones
 from .dependencies import CurrentAccount
 from .messages import Messages, get_messages
 
@@ -92,24 +92,24 @@ async def location_overview(
     except StopIteration as e:
         raise HTTPException(status_code=404, detail="Unknown location") from e
 
-    # Get indoor sensor data for charts (averaged over 1-hour buckets)
-    sensors = await get_sensors(
+    # Get indoor zone data for charts (averaged over 1-hour buckets)
+    zones = await get_zones(
         account_id=account_id, location_id=location_id, is_outdoor=False
     )
-    sensor_data = []
-    for sensor_id, sensor_name, sensor_color in sensors:
-        measurements = await get_measurements_averaged(
-            sensor_id=sensor_id,
+    zone_data = []
+    for zone_id, zone_name, zone_color in zones:
+        measurements = await get_zone_measurements_averaged(
+            zone_id=zone_id,
             attribute=Attribute.AIR_TEMPERATURE,
             hours=168,
             bucket_minutes=60,
         )
         if measurements:
-            sensor_data.append(
+            zone_data.append(
                 {
-                    "id": sensor_id,
-                    "name": sensor_name or f"Sensor {sensor_id}",
-                    "color": sensor_color,
+                    "id": zone_id,
+                    "name": zone_name,
+                    "color": zone_color,
                     "labels": [m[0].isoformat() for m in measurements],
                     "values": [m[1] / 100 for m in measurements],
                 }
@@ -128,17 +128,17 @@ async def location_overview(
 
     # Build outdoor hub data
     outdoor_hub_data = None
-    outdoor_sensors = await get_sensors(
+    outdoor_zones = await get_zones(
         account_id=account_id, location_id=location_id, is_outdoor=True
     )
-    if outdoor_sensors:
+    if outdoor_zones:
         now = datetime.now(UTC)
 
-        # Collect outdoor sensor measurements (48h, 15-min buckets)
+        # Collect outdoor zone measurements (48h, 15-min buckets)
         all_measurements: list[tuple[datetime, float]] = []
-        for sensor_id, _, _ in outdoor_sensors:
-            measurements = await get_measurements_averaged(
-                sensor_id=sensor_id,
+        for zone_id, _, _ in outdoor_zones:
+            measurements = await get_zone_measurements_averaged(
+                zone_id=zone_id,
                 attribute=Attribute.AIR_TEMPERATURE,
                 hours=48,
                 bucket_minutes=15,
@@ -181,7 +181,7 @@ async def location_overview(
     context = {
         "locations": locations,
         "current_location": current_location,
-        "sensor_data": sensor_data,
+        "zone_data": zone_data,
         "forecast_data": forecast_data,
         "outdoor_hub_data": outdoor_hub_data,
     }

@@ -1,0 +1,69 @@
+{% extends "settings/layout.html" %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/settings/zones/">Zones</a></li>
+    <li class="breadcrumb-item active" aria-current="page">New Zone</li>
+  </ol>
+</nav>
+
+<h2>Add Zone</h2>
+<p class="text-body-secondary">Create a new zone to track measurements at a specific location.</p>
+
+<div class="row">
+  <div class="col-md-6">
+    <form method="post" action="/settings/zones/new/">
+      <div class="mb-3">
+        <label for="name" class="form-label">Name</label>
+        <input type="text" class="form-control" id="name" name="name" required placeholder="e.g., Living Room">
+        <div class="form-text">A descriptive name for this zone.</div>
+      </div>
+
+      <div class="mb-3">
+        <label for="location_id" class="form-label">Location</label>
+        <select class="form-select" id="location_id" name="location_id" required>
+          <option value="">Select a location...</option>
+          {% for location in locations %}
+          <option value="{{ location.id }}">{{ location.name }}</option>
+          {% endfor %}
+        </select>
+        <div class="form-text">The location this zone belongs to.</div>
+      </div>
+
+      <div class="mb-3 form-check">
+        <input type="checkbox" class="form-check-input" id="is_outdoor" name="is_outdoor" value="true">
+        <label class="form-check-label" for="is_outdoor">Outdoor zone</label>
+        <div class="form-text">Mark this zone as outdoor to include it in the outdoor temperature chart.</div>
+      </div>
+
+      <div class="mb-3">
+        <label for="color" class="form-label">Chart color (optional)</label>
+        <div class="input-group" style="max-width: 200px;">
+          <input type="color" class="form-control form-control-color" id="color-picker" value="#808080" title="Choose color">
+          <input type="text" class="form-control" id="color" name="color" value="" placeholder="#rrggbb">
+        </div>
+        <div class="form-text">Color to use in charts. Leave empty for auto-generated color.</div>
+      </div>
+      <script>
+        // Sync color picker with text input
+        const colorPicker = document.getElementById('color-picker');
+        const colorInput = document.getElementById('color');
+        colorPicker.addEventListener('input', (e) => {
+          colorInput.value = e.target.value;
+        });
+        colorInput.addEventListener('input', (e) => {
+          if (/^#[0-9A-Fa-f]{6}$/.test(e.target.value)) {
+            colorPicker.value = e.target.value;
+          }
+        });
+      </script>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary">Create Zone</button>
+        <a href="/settings/zones/" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

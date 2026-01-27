@@ -51,7 +51,7 @@
         </div>
       </div>
       {% endif %}
-      {% if sensor_data %}
+      {% if zone_data %}
       <div class="col-12 mt-4">
         <div class="card">
           <div class="card-body">
@@ -519,26 +519,26 @@
       });
     }
 
-    const sensorData = {{ sensor_data | tojson }};
+    const zoneData = {{ zone_data | tojson }};
     const now = new Date();
     const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-    // Generate a stable color from sensor ID using a simple hash
-    function getColorForSensor(sensorId) {
+    // Generate a stable color from zone ID using a simple hash
+    function getColorForZone(zoneId) {
       // Use golden ratio to spread colors evenly
-      const hue = (sensorId * 137.508) % 360;
+      const hue = (zoneId * 137.508) % 360;
       return `hsl(${hue}, 70%, 50%)`;
     }
 
-    if (sensorData.length > 0) {
+    if (zoneData.length > 0) {
       const ctx = document.getElementById('indoor-chart');
-      const datasets = sensorData.map(sensor => ({
-        label: sensor.name,
-        data: sensor.labels.map((l, i) => ({
+      const datasets = zoneData.map(zone => ({
+        label: zone.name,
+        data: zone.labels.map((l, i) => ({
           x: new Date(l),
-          y: sensor.values[i]
+          y: zone.values[i]
         })),
-        borderColor: sensor.color || getColorForSensor(sensor.id),
+        borderColor: zone.color || getColorForZone(zone.id),
         tension: 0.1,
         fill: false,
         pointRadius: 0,

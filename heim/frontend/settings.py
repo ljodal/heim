@@ -38,6 +38,16 @@ from ..sensors.queries import (
     get_sensor,
     update_sensor,
 )
+from ..zones.queries import (
+    assign_sensor_to_zone,
+    create_zone,
+    get_all_zones,
+    get_sensor_current_zone,
+    get_zone,
+    get_zone_assignments,
+    unassign_sensor,
+    update_zone,
+)
 from .dependencies import CurrentAccount
 from .messages import Messages, get_messages
 
@@ -446,4 +456,198 @@ async def forecast_update_view(
     messages.success(f"Forecast '{name}' updated successfully!")
     return RedirectResponse(
         url="/settings/forecasts/", status_code=status.HTTP_303_SEE_OTHER
+    )
+
+
+#################
+# Zone Settings #
+#################
+
+
+@router.get("/zones/", response_class=HTMLResponse)
+async def zones_list(
+    request: Request,
+    account_id: CurrentAccount,
+) -> Response:
+    """List and manage zones."""
+    zones = await get_all_zones(account_id=account_id)
+
+    context = {
+        "zones": zones,
+        "active_tab": "zones",
+    }
+    return templates.TemplateResponse(request, "settings/zones.html", context)
+
+
+@router.get("/zones/new/", response_class=HTMLResponse)
+async def zone_new(
+    request: Request,
+    account_id: CurrentAccount,
+) -> Response:
+    """Form to add a new zone."""
+    locations = await get_locations(account_id=account_id)
+
+    context = {
+        "locations": locations,
+        "active_tab": "zones",
+    }
+    return templates.TemplateResponse(request, "settings/zone_form.html", context)
+
+
+@router.post("/zones/new/", response_class=RedirectResponse)
+async def zone_create(
+    request: Request,
+    account_id: CurrentAccount,
+    messages: Messages,
+    name: Annotated[str, Form()],
+    location_id: Annotated[int, Form()],
+    is_outdoor: Annotated[str | None, Form()] = None,
+    color: Annotated[str | None, Form()] = None,
+) -> RedirectResponse:
+    """Create a new zone."""
+    zone_id = await create_zone(
+        account_id=account_id,
+        location_id=location_id,
+        name=name,
+        is_outdoor=is_outdoor == "true",
+        color=color or None,
+    )
+    if zone_id:
+        messages.success(f"Zone '{name}' created successfully!")
+    else:
+        messages.error("Failed to create zone. Check that the location exists.")
+    return RedirectResponse(
+        url="/settings/zones/", status_code=status.HTTP_303_SEE_OTHER
+    )
+
+
+@router.get("/zones/{zone_id}/", response_class=HTMLResponse)
+async def zone_detail(
+    request: Request,
+    account_id: CurrentAccount,
+    zone_id: Annotated[int, Path()],
+) -> Response:
+    """View zone details."""
+    zone_data = await get_zone(account_id=account_id, zone_id=zone_id)
+    if zone_data is None:
+        raise HTTPException(status_code=404, detail="Zone not found")
+
+    zone = {
+        "id": zone_data[0],
+        "name": zone_data[1],
+        "location_id": zone_data[2],
+        "location_name": zone_data[3],
+        "is_outdoor": zone_data[4],
+        "color": zone_data[5],
+    }
+
+    # Get assignment history
+    assignments = await get_zone_assignments(account_id=account_id, zone_id=zone_id)
+
+    # Find current assignment (if any)
+    current_assignment = None
+    for assignment_id, sensor_id, sensor_name, start_time, end_time in assignments:
+        if end_time is None:
+            current_assignment = {
+                "id": assignment_id,
+                "sensor_id": sensor_id,
+                "sensor_name": sensor_name,
+                "start_time": start_time,
+            }
+            break
+
+    # Get available sensors for assignment
+    all_sensors = await get_all_sensors(account_id=account_id)
+    available_sensors = []
+    for sensor_id, name, _location, _outdoor, _source, _color in all_sensors:
+        current_zone = await get_sensor_current_zone(
+            account_id=account_id, sensor_id=sensor_id
+        )
+        available_sensors.append(
+            {
+                "id": sensor_id,
+                "name": name,
+                "current_zone": current_zone[1] if current_zone else None,
+            }
+        )
+
+    context = {
+        "zone": zone,
+        "assignments": assignments,
+        "current_assignment": current_assignment,
+        "available_sensors": available_sensors,
+        "active_tab": "zones",
+    }
+    return templates.TemplateResponse(request, "settings/zone_detail.html", context)
+
+
+@router.post("/zones/{zone_id}/", response_class=RedirectResponse)
+async def zone_update_view(
+    request: Request,
+    account_id: CurrentAccount,
+    messages: Messages,
+    zone_id: Annotated[int, Path()],
+    name: Annotated[str, Form()],
+    is_outdoor: Annotated[str | None, Form()] = None,
+    color: Annotated[str | None, Form()] = None,
+) -> RedirectResponse:
+    """Update a zone."""
+    await update_zone(
+        account_id=account_id,
+        zone_id=zone_id,
+        name=name,
+        is_outdoor=is_outdoor == "true",
+        color=color,
+    )
+    messages.success(f"Zone '{name}' updated successfully!")
+    return RedirectResponse(
+        url="/settings/zones/", status_code=status.HTTP_303_SEE_OTHER
+    )
+
+
+@router.post("/zones/{zone_id}/assign/", response_class=RedirectResponse)
+async def zone_assign_sensor(
+    request: Request,
+    account_id: CurrentAccount,
+    messages: Messages,
+    zone_id: Annotated[int, Path()],
+    sensor_id: Annotated[int, Form()],
+) -> RedirectResponse:
+    """Assign a sensor to a zone."""
+    success = await assign_sensor_to_zone(
+        account_id=account_id,
+        zone_id=zone_id,
+        sensor_id=sensor_id,
+    )
+    if success:
+        messages.success("Sensor assigned successfully!")
+    else:
+        messages.error(
+            "Failed to assign sensor. Check that both zone and sensor exist."
+        )
+    return RedirectResponse(
+        url=f"/settings/zones/{zone_id}/", status_code=status.HTTP_303_SEE_OTHER
+    )
+
+
+@router.post("/zones/{zone_id}/unassign/", response_class=RedirectResponse)
+async def zone_unassign_sensor(
+    request: Request,
+    account_id: CurrentAccount,
+    messages: Messages,
+    zone_id: Annotated[int, Path()],
+) -> RedirectResponse:
+    """Unassign the current sensor from a zone."""
+    # Get current assignment to find the sensor
+    assignments = await get_zone_assignments(account_id=account_id, zone_id=zone_id)
+    for _, sensor_id, _, _, end_time in assignments:
+        if end_time is None:
+            success = await unassign_sensor(account_id=account_id, sensor_id=sensor_id)
+            if success:
+                messages.success("Sensor unassigned successfully!")
+            else:
+                messages.error("Failed to unassign sensor.")
+            break
+    return RedirectResponse(
+        url=f"/settings/zones/{zone_id}/", status_code=status.HTTP_303_SEE_OTHER
     )

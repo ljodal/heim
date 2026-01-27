@@ -1,0 +1,65 @@
+{% extends "settings/layout.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2>Zones</h2>
+  <a href="/settings/zones/new/" class="btn btn-primary">Add Zone</a>
+</div>
+
+<p class="text-body-secondary">Zones are logical locations that track measurements over time. Sensors can be assigned to zones, and reassigned when moved or replaced.</p>
+
+{% if zones %}
+<div class="table-responsive">
+  <table class="table table-hover">
+    <thead>
+      <tr>
+        <th>Color</th>
+        <th>Name</th>
+        <th>Location</th>
+        <th>Type</th>
+        <th>Current Sensor</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for zone_id, name, location_name, is_outdoor, color, current_sensor_id in zones %}
+      <tr>
+        <td>
+          {% if color %}
+            <span style="display: inline-block; width: 20px; height: 20px; background-color: {{ color }}; border-radius: 3px; vertical-align: middle;"></span>
+          {% else %}
+            <span class="text-body-secondary">—</span>
+          {% endif %}
+        </td>
+        <td>
+          <a href="/settings/zones/{{ zone_id }}/">{{ name }}</a>
+        </td>
+        <td class="text-body-secondary">{{ location_name }}</td>
+        <td>
+          {% if is_outdoor %}
+            <span class="badge bg-primary">Outdoor</span>
+          {% else %}
+            <span class="badge bg-secondary">Indoor</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if current_sensor_id %}
+            <span class="badge bg-success">Assigned</span>
+          {% else %}
+            <span class="badge bg-warning text-dark">No sensor</span>
+          {% endif %}
+        </td>
+        <td>
+          <a href="/settings/zones/{{ zone_id }}/" class="btn btn-sm btn-outline-secondary">Edit</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="alert alert-info">
+  No zones configured yet. Click "Add Zone" to create one.
+</div>
+{% endif %}
+{% endblock %}

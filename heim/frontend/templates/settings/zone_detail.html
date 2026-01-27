@@ -1,0 +1,137 @@
+{% extends "settings/layout.html" %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/settings/zones/">Zones</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{{ zone.name }}</li>
+  </ol>
+</nav>
+
+<h2>Edit Zone</h2>
+<p class="text-body-secondary">Update zone details and manage sensor assignments.</p>
+
+<div class="row">
+  <div class="col-md-6">
+    <form method="post" action="/settings/zones/{{ zone.id }}/">
+      <div class="mb-3">
+        <label for="name" class="form-label">Name</label>
+        <input type="text" class="form-control" id="name" name="name" required value="{{ zone.name }}">
+        <div class="form-text">A descriptive name for this zone (e.g., "Living Room", "Garden").</div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Location</label>
+        <input type="text" class="form-control" value="{{ zone.location_name }}" disabled>
+        <div class="form-text">Location cannot be changed after zone creation.</div>
+      </div>
+
+      <div class="mb-3 form-check">
+        <input type="checkbox" class="form-check-input" id="is_outdoor" name="is_outdoor" value="true" {% if zone.is_outdoor %}checked{% endif %}>
+        <label class="form-check-label" for="is_outdoor">Outdoor zone</label>
+        <div class="form-text">Mark this zone as outdoor to include it in the outdoor temperature chart.</div>
+      </div>
+
+      <div class="mb-3">
+        <label for="color" class="form-label">Chart color</label>
+        <div class="input-group" style="max-width: 200px;">
+          <input type="color" class="form-control form-control-color" id="color-picker" value="{{ zone.color or '#808080' }}" title="Choose color">
+          <input type="text" class="form-control" id="color" name="color" value="{{ zone.color or '' }}" placeholder="#rrggbb">
+        </div>
+        <div class="form-text">Color to use in charts. Leave empty for auto-generated color.</div>
+      </div>
+      <script>
+        // Sync color picker with text input
+        const colorPicker = document.getElementById('color-picker');
+        const colorInput = document.getElementById('color');
+        colorPicker.addEventListener('input', (e) => {
+          colorInput.value = e.target.value;
+        });
+        colorInput.addEventListener('input', (e) => {
+          if (/^#[0-9A-Fa-f]{6}$/.test(e.target.value)) {
+            colorPicker.value = e.target.value;
+          }
+        });
+      </script>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+        <a href="/settings/zones/" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<hr class="my-4">
+
+<h4>Sensor Assignment</h4>
+<p class="text-body-secondary">Assign a sensor to this zone to start collecting measurements.</p>
+
+<div class="row">
+  <div class="col-md-6">
+    {% if current_assignment %}
+    <div class="alert alert-success">
+      <strong>Currently assigned:</strong> {{ current_assignment.sensor_name or 'Sensor ' ~ current_assignment.sensor_id }}
+      <form method="post" action="/settings/zones/{{ zone.id }}/unassign/" class="d-inline">
+        <button type="submit" class="btn btn-sm btn-outline-danger ms-2">Unassign</button>
+      </form>
+    </div>
+    {% else %}
+    <div class="alert alert-warning">
+      No sensor currently assigned to this zone.
+    </div>
+    {% endif %}
+
+    <form method="post" action="/settings/zones/{{ zone.id }}/assign/">
+      <div class="mb-3">
+        <label for="sensor_id" class="form-label">Assign sensor</label>
+        <select class="form-select" id="sensor_id" name="sensor_id" required>
+          <option value="">Select a sensor...</option>
+          {% for sensor in available_sensors %}
+          <option value="{{ sensor.id }}">
+            {{ sensor.name or 'Sensor ' ~ sensor.id }}
+            {% if sensor.current_zone %}(currently in {{ sensor.current_zone }}){% endif %}
+          </option>
+          {% endfor %}
+        </select>
+        <div class="form-text">Select a sensor to assign to this zone. If the sensor is already assigned elsewhere, it will be moved here.</div>
+      </div>
+      <button type="submit" class="btn btn-outline-primary">Assign Sensor</button>
+    </form>
+  </div>
+</div>
+
+{% if assignments %}
+<hr class="my-4">
+
+<h4>Assignment History</h4>
+<p class="text-body-secondary">Previous sensors that have been assigned to this zone.</p>
+
+<div class="table-responsive">
+  <table class="table table-sm">
+    <thead>
+      <tr>
+        <th>Sensor</th>
+        <th>From</th>
+        <th>Until</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for assignment_id, sensor_id, sensor_name, start_time, end_time in assignments %}
+      <tr>
+        <td>{{ sensor_name or 'Sensor ' ~ sensor_id }}</td>
+        <td>{{ start_time.strftime('%Y-%m-%d %H:%M') }}</td>
+        <td>
+          {% if end_time %}
+            {{ end_time.strftime('%Y-%m-%d %H:%M') }}
+          {% else %}
+            <span class="badge bg-success">Active</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}
