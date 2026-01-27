@@ -19,6 +19,7 @@ dependencies = [
     "sentry-sdk[fastapi,asyncpg]>=2",
     "prometheus-fastapi-instrumentator>=7",
     "jinja2>=3",
+    "websockets>=15",
 ]
 
 [project.scripts]
