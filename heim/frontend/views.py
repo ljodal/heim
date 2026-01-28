@@ -1,5 +1,4 @@
-from datetime import UTC, datetime
-from typing import Annotated, Any
+from typing import Annotated
 
 from fastapi import APIRouter, Form, HTTPException, Path, Request, Response, status
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -7,9 +6,10 @@ from fastapi.templating import Jinja2Templates
 
 from ..accounts.queries import get_account, get_locations
 from ..accounts.utils import compare_password, hash_password
+from ..api.selectors import get_temperature_chart_data
 from ..auth.dependencies import CookieSession
 from ..auth.queries import create_session, delete_session
-from ..forecasts.queries import get_forecast, get_instances, get_latest_forecast_values
+from ..forecasts.queries import get_latest_forecast_values
 from ..sensors.queries import get_measurements_averaged, get_sensors
 from ..sensors.types import Attribute
 from .dependencies import CurrentAccount
@@ -30,12 +30,16 @@ async def index(request: Request, account_id: CurrentAccount) -> RedirectRespons
 
 
 @router.get("/login/", response_class=HTMLResponse)
-def login(request: Request) -> Response:
+def login(request: Request, redirect_uri: str | None = None) -> Response:
     """
-    Render the login form. The actual login is handled by the view below
-    """
+    Render the login form. The actual login is handled by the view below.
 
-    return templates.TemplateResponse(request, "login.html")
+    If redirect_uri is provided (from /api/auth/authorize), it will be passed
+    to the template and included as a hidden form field.
+    """
+    return templates.TemplateResponse(
+        request, "login.html", {"redirect_uri": redirect_uri}
+    )
 
 
 @router.post("/login/", response_class=RedirectResponse)
@@ -44,9 +48,13 @@ async def do_login(
     username: Annotated[str, Form()],
     password: Annotated[str, Form()],
     messages: Messages,
+    redirect_uri: Annotated[str | None, Form()] = None,
 ) -> RedirectResponse:
     """
     Authenticate the user and set a session cookie.
+
+    If redirect_uri is provided (OAuth2 flow for native apps), redirects to
+    the app callback with the access token in the URL fragment.
     """
 
     if account := await get_account(username=username):
@@ -61,10 +69,23 @@ async def do_login(
         or account_id is None
     ):
         messages.error("Invalid credentials")
-        return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
+        # Preserve redirect_uri on failed login
+        login_url = "/login/"
+        if redirect_uri:
+            login_url = f"/login/?redirect_uri={redirect_uri}"
+        return RedirectResponse(url=login_url, status_code=status.HTTP_303_SEE_OTHER)
 
-    response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
     session = await create_session(account_id=account_id)
+
+    # OAuth2 flow: redirect to app with token in fragment
+    if redirect_uri:
+        return RedirectResponse(
+            url=f"{redirect_uri}#access_token={session.key}",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+
+    # Normal web flow: set cookie and redirect to home
+    response = RedirectResponse(url="/", status_code=status.HTTP_303_SEE_OTHER)
     response.set_cookie("session_id", session.key)
     return response
 
@@ -128,54 +149,25 @@ async def location_overview(
 
     # Build outdoor hub data
     outdoor_hub_data = None
-    outdoor_sensors = await get_sensors(
-        account_id=account_id, location_id=location_id, is_outdoor=True
+    chart_data = await get_temperature_chart_data(
+        account_id=account_id, location_id=location_id
     )
-    if outdoor_sensors:
-        now = datetime.now(UTC)
-
-        # Collect outdoor sensor measurements (48h, 15-min buckets)
-        all_measurements: list[tuple[datetime, float]] = []
-        for sensor_id, _, _ in outdoor_sensors:
-            measurements = await get_measurements_averaged(
-                sensor_id=sensor_id,
-                attribute=Attribute.AIR_TEMPERATURE,
-                hours=48,
-                bucket_minutes=15,
-            )
-            all_measurements.extend(measurements)
-
-        # Sort by time and convert values
-        all_measurements.sort(key=lambda m: m[0])
-
-        # Get forecast instances
-        forecast_id = await get_forecast(account_id=account_id, location_id=location_id)
-        forecasts: list[dict[str, Any]] = []
-        if forecast_id:
-            instances = await get_instances(
-                forecast_id=forecast_id, attribute=Attribute.AIR_TEMPERATURE
-            )
-            for created_at, values in instances.items():
-                age_hours = (now - created_at).total_seconds() / 3600
-                # Filter to future values only
-                future_values = [(ts, val) for ts, val in values if ts > now]
-                if future_values:
-                    forecasts.append(
-                        {
-                            "created_at": created_at.isoformat(),
-                            "age_hours": age_hours,
-                            "labels": [v[0].isoformat() for v in future_values],
-                            "values": [v[1] / 100 for v in future_values],
-                        }
-                    )
-
+    if chart_data:
         outdoor_hub_data = {
             "measurements": {
-                "labels": [m[0].isoformat() for m in all_measurements],
-                "values": [m[1] / 100 for m in all_measurements],
+                "labels": [r.date.isoformat() for r in chart_data.history],
+                "values": [r.temperature for r in chart_data.history],
             },
-            "forecasts": forecasts,
-            "now": now.isoformat(),
+            "forecasts": [
+                {
+                    "created_at": f.created_at.isoformat(),
+                    "age_hours": f.age_hours,
+                    "labels": [r.date.isoformat() for r in f.data],
+                    "values": [r.temperature for r in f.data],
+                }
+                for f in chart_data.forecasts
+            ],
+            "now": chart_data.now.isoformat(),
         }
 
     context = {
