@@ -1,67 +1,44 @@
 {% extends "layout.html" %}
 
 {% block body %}
-  <nav class="navbar navbar-expand-lg navbar-dark bg-danger sticky-top">
-    <div class="container-fluid">
-      <span class="navbar-brand">
-        Heim
-      </span>
-
-      <div class="justify-content-md-center" id="location-switcher">
-        <div class="d-flex">
-          <div class="btn-group">
-            {% for location in locations %}
-              <a class="btn btn-outline-light btn-sm {% if location.id == current_location.id %}active{% endif %}" href="/{{ location.id }}/">
-                {{ location.name }}
-              </a>
-            {% endfor %}
-          </div>
-        </div>
-      </div>
-
-      <ul class="navbar-nav">
-        <li class="nav-item">
-          <a href="/settings/" class="nav-link">Settings</a>
+  <nav class="container-fluid">
+    <ul>
+      <li><strong>Heim</strong></li>
+    </ul>
+    <ul>
+      {% for location in locations %}
+        <li>
+          <a href="/{{ location.id }}/" {% if location.id == current_location.id %}aria-current="page"{% endif %}>
+            {{ location.name }}
+          </a>
         </li>
-        <li class="nav-item">
-          <a href="/logout/" class="nav-link">Log out</a>
-        </li>
-      </ul>
-    </div>
+      {% endfor %}
+    </ul>
+    <ul>
+      <li><a href="/settings/">Settings</a></li>
+      <li><a href="/logout/">Log out</a></li>
+    </ul>
   </nav>
 
   <main class="container">
-    <div class="row">
-      {% if outdoor_hub_data %}
-      <div class="col-12 mt-4">
-        <div class="card">
-          <div class="card-body">
-            <h5 class="card-title">Outdoor</h5>
-            <canvas id="outdoor-hub-chart"></canvas>
-          </div>
-        </div>
-      </div>
-      {% elif forecast_data %}
-      <div class="col-12 mt-4">
-        <div class="card">
-          <div class="card-body">
-            <h5 class="card-title">Forecast</h5>
-            <canvas id="forecast-chart"></canvas>
-          </div>
-        </div>
-      </div>
-      {% endif %}
-      {% if sensor_data %}
-      <div class="col-12 mt-4">
-        <div class="card">
-          <div class="card-body">
-            <h5 class="card-title">Indoor</h5>
-            <canvas id="indoor-chart"></canvas>
-          </div>
-        </div>
-      </div>
-      {% endif %}
-    </div>
+    {% if outdoor_hub_data %}
+    <article>
+      <header>Outdoor</header>
+      <canvas id="outdoor-hub-chart"></canvas>
+    </article>
+    {% elif forecast_data %}
+    <article>
+      <header>Forecast</header>
+      <canvas id="forecast-chart"></canvas>
+    </article>
+    {% endif %}
+
+    {% if sensor_data %}
+    <article>
+      <header>Indoor</header>
+      <canvas id="indoor-chart"></canvas>
+    </article>
+    {% endif %}
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

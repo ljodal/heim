@@ -1,13 +1,46 @@
 {% extends "settings/layout.html" %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <div>
-    <h2>Add Netatmo Sensor</h2>
-    <p class="text-body-secondary mb-0">Select a device from your Netatmo account to add as a sensor.</p>
-  </div>
-  <a href="/settings/netatmo/" class="btn btn-outline-secondary">Back</a>
-</div>
+<style>
+  .device-module {
+    padding: 1rem;
+    border: 1px solid var(--pico-muted-border-color);
+    border-radius: var(--pico-border-radius);
+    margin-bottom: 1rem;
+  }
+  .device-module.added {
+    border-color: var(--pico-ins-color);
+    opacity: 0.75;
+  }
+  .device-module header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.5rem;
+  }
+  .device-module form {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+  .device-module select {
+    width: auto;
+    margin: 0;
+    padding: 0.25rem 0.5rem;
+  }
+  .device-module button {
+    margin: 0;
+    padding: 0.25rem 0.75rem;
+  }
+</style>
+
+<header style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+  <hgroup style="margin: 0;">
+    <h2 style="margin: 0;">Add Netatmo Sensor</h2>
+    <p style="margin: 0;">Select a device from your Netatmo account to add as a sensor.</p>
+  </hgroup>
+  <a href="/settings/netatmo/" role="button" class="secondary outline">Back</a>
+</header>
 
 {% if not locations %}
   <div class="alert alert-warning">
@@ -19,53 +52,52 @@
   </div>
 {% else %}
   {% for station in stations %}
-    <div class="card mb-4">
-      <div class="card-header">
+    <article>
+      <header>
         <strong>{{ station.station_name }}</strong>
         {% if station.place and station.place.city %}
-          <span class="text-body-secondary">- {{ station.place.city }}</span>
+          <small>- {{ station.place.city }}</small>
         {% endif %}
-      </div>
-      <div class="card-body">
-        <!-- Main station module -->
-        <div class="mb-3 p-3 border rounded {% if station.id in registered_ids %}border-success opacity-75{% endif %}">
-          <div class="d-flex justify-content-between align-items-start">
-            <div>
-              <h6 class="mb-1">{{ station.module_name }}</h6>
-              <p class="text-body-secondary small mb-0">
-                <span class="badge bg-secondary">{{ station.type }}</span>
-                Indoor module - Temperature, Humidity, CO2, Noise, Pressure
-              </p>
-            </div>
-            {% if station.id in registered_ids %}
-              <span class="badge bg-success">Added</span>
-            {% else %}
-              <form action="/settings/netatmo/devices/add/" method="post" class="d-flex gap-2 align-items-center">
-                <input type="hidden" name="device_id" value="{{ station.id }}">
-                <input type="hidden" name="device_name" value="{{ station.module_name }}">
-                <input type="hidden" name="module_type" value="{{ station.type }}">
-                <input type="hidden" name="station_id" value="{{ station.id }}">
-                <select name="location_id" class="form-select form-select-sm" style="width: auto;" required>
-                  <option value="">Location...</option>
-                  {% for location in locations %}
-                    <option value="{{ location.id }}">{{ location.name }}</option>
-                  {% endfor %}
-                </select>
-                <button type="submit" class="btn btn-primary btn-sm">Add</button>
-              </form>
-            {% endif %}
-          </div>
-        </div>
+      </header>
 
-        <!-- Additional modules -->
-        {% if station.modules %}
-          {% for module in station.modules %}
-            <div class="mb-3 p-3 border rounded {% if module.id in registered_ids %}border-success opacity-75{% endif %}">
-              <div class="d-flex justify-content-between align-items-start">
-                <div>
-                  <h6 class="mb-1">{{ module.module_name }}</h6>
-                  <p class="text-body-secondary small mb-0">
-                    <span class="badge bg-secondary">{{ module.type }}</span>
+      <div class="device-module {% if station.id in registered_ids %}added{% endif %}">
+        <header>
+          <div>
+            <strong>{{ station.module_name }}</strong>
+            <p style="margin: 0;">
+              <span class="badge">{{ station.type }}</span>
+              <small>Indoor module - Temperature, Humidity, CO2, Noise, Pressure</small>
+            </p>
+          </div>
+          {% if station.id in registered_ids %}
+            <span class="badge badge-success">Added</span>
+          {% else %}
+            <form action="/settings/netatmo/devices/add/" method="post">
+              <input type="hidden" name="device_id" value="{{ station.id }}">
+              <input type="hidden" name="device_name" value="{{ station.module_name }}">
+              <input type="hidden" name="module_type" value="{{ station.type }}">
+              <input type="hidden" name="station_id" value="{{ station.id }}">
+              <select name="location_id" required>
+                <option value="">Location...</option>
+                {% for location in locations %}
+                  <option value="{{ location.id }}">{{ location.name }}</option>
+                {% endfor %}
+              </select>
+              <button type="submit">Add</button>
+            </form>
+          {% endif %}
+        </header>
+      </div>
+
+      {% if station.modules %}
+        {% for module in station.modules %}
+          <div class="device-module {% if module.id in registered_ids %}added{% endif %}">
+            <header>
+              <div>
+                <strong>{{ module.module_name }}</strong>
+                <p style="margin: 0;">
+                  <span class="badge">{{ module.type }}</span>
+                  <small>
                     {% if module.type == 'NAModule1' %}
                       Outdoor module - Temperature, Humidity
                     {% elif module.type == 'NAModule2' %}
@@ -77,31 +109,31 @@
                     {% else %}
                       Additional module
                     {% endif %}
-                  </p>
-                </div>
-                {% if module.id in registered_ids %}
-                  <span class="badge bg-success">Added</span>
-                {% else %}
-                  <form action="/settings/netatmo/devices/add/" method="post" class="d-flex gap-2 align-items-center">
-                    <input type="hidden" name="device_id" value="{{ module.id }}">
-                    <input type="hidden" name="device_name" value="{{ module.module_name }}">
-                    <input type="hidden" name="module_type" value="{{ module.type }}">
-                    <input type="hidden" name="station_id" value="{{ station.id }}">
-                    <select name="location_id" class="form-select form-select-sm" style="width: auto;" required>
-                      <option value="">Location...</option>
-                      {% for location in locations %}
-                        <option value="{{ location.id }}">{{ location.name }}</option>
-                      {% endfor %}
-                    </select>
-                    <button type="submit" class="btn btn-primary btn-sm">Add</button>
-                  </form>
-                {% endif %}
+                  </small>
+                </p>
               </div>
-            </div>
-          {% endfor %}
-        {% endif %}
-      </div>
-    </div>
+              {% if module.id in registered_ids %}
+                <span class="badge badge-success">Added</span>
+              {% else %}
+                <form action="/settings/netatmo/devices/add/" method="post">
+                  <input type="hidden" name="device_id" value="{{ module.id }}">
+                  <input type="hidden" name="device_name" value="{{ module.module_name }}">
+                  <input type="hidden" name="module_type" value="{{ module.type }}">
+                  <input type="hidden" name="station_id" value="{{ station.id }}">
+                  <select name="location_id" required>
+                    <option value="">Location...</option>
+                    {% for location in locations %}
+                      <option value="{{ location.id }}">{{ location.name }}</option>
+                    {% endfor %}
+                  </select>
+                  <button type="submit">Add</button>
+                </form>
+              {% endif %}
+            </header>
+          </div>
+        {% endfor %}
+      {% endif %}
+    </article>
   {% endfor %}
 {% endif %}
 {% endblock %}

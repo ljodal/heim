@@ -1,59 +1,53 @@
 {% extends "settings/layout.html" %}
 
 {% block content %}
-<h2>Settings Overview</h2>
-<p class="text-body-secondary">Manage your home monitoring configuration.</p>
+<hgroup>
+  <h2>Settings Overview</h2>
+  <p>Manage your home monitoring configuration.</p>
+</hgroup>
 
-<div class="row mt-4">
-  <!-- Locations Card -->
-  <div class="col-md-6 col-lg-4 mb-4">
-    <div class="card h-100">
-      <div class="card-body">
-        <h5 class="card-title">Locations</h5>
-        <p class="card-text text-body-secondary">
-          {% if locations %}
-            {{ locations|length }} location{% if locations|length != 1 %}s{% endif %} configured
-          {% else %}
-            No locations configured
-          {% endif %}
-        </p>
-        <ul class="list-unstyled mb-3">
-          {% for location in locations[:3] %}
-            <li class="small">{{ location.name }}</li>
-          {% endfor %}
-          {% if locations|length > 3 %}
-            <li class="small text-body-secondary">and {{ locations|length - 3 }} more...</li>
-          {% endif %}
-        </ul>
-        <a href="/settings/locations/" class="btn btn-outline-primary btn-sm">Manage Locations</a>
-      </div>
-    </div>
-  </div>
+<div class="grid">
+  <article>
+    <header>Locations</header>
+    <p>
+      {% if locations %}
+        {{ locations|length }} location{% if locations|length != 1 %}s{% endif %} configured
+      {% else %}
+        No locations configured
+      {% endif %}
+    </p>
+    <ul>
+      {% for location in locations[:3] %}
+        <li>{{ location.name }}</li>
+      {% endfor %}
+      {% if locations|length > 3 %}
+        <li><small>and {{ locations|length - 3 }} more...</small></li>
+      {% endif %}
+    </ul>
+    <footer>
+      <a href="/settings/locations/" role="button" class="outline">Manage Locations</a>
+    </footer>
+  </article>
 
   {% if netatmo_configured %}
-  <!-- Netatmo Card -->
-  <div class="col-md-6 col-lg-4 mb-4">
-    <div class="card h-100">
-      <div class="card-body">
-        <h5 class="card-title">Netatmo Integration</h5>
-        <p class="card-text text-body-secondary">
-          {% if netatmo_account %}
-            Connected
-          {% else %}
-            Not connected
-          {% endif %}
-        </p>
-        {% if netatmo_account %}
-          <p class="small text-body-secondary mb-3">
-            Token expires: {{ netatmo_account.expires_at.strftime('%Y-%m-%d %H:%M') }}
-          </p>
-        {% endif %}
-        <a href="/settings/netatmo/" class="btn btn-outline-primary btn-sm">
-          {% if netatmo_account %}Manage Netatmo{% else %}Connect Netatmo{% endif %}
-        </a>
-      </div>
-    </div>
-  </div>
+  <article>
+    <header>Netatmo Integration</header>
+    <p>
+      {% if netatmo_account %}
+        <span class="badge badge-success">Connected</span>
+      {% else %}
+        Not connected
+      {% endif %}
+    </p>
+    {% if netatmo_account %}
+      <p><small>Token expires: {{ netatmo_account.expires_at.strftime('%Y-%m-%d %H:%M') }}</small></p>
+    {% endif %}
+    <footer>
+      <a href="/settings/netatmo/" role="button" class="outline">
+        {% if netatmo_account %}Manage Netatmo{% else %}Connect Netatmo{% endif %}
+      </a>
+    </footer>
+  </article>
   {% endif %}
 </div>
 {% endblock %}

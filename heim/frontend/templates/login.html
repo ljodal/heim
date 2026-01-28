@@ -1,55 +1,37 @@
 {% extends "layout.html" %}
 
 {% block body %}
-<main class="container d-flex align-items-center justify-content-center" style="min-height:100vh;">
-  <form class="w-100" style="max-width:400px;" method="POST">
-    <div class="text-center mb-4">
-      <svg viewBox="0 0 64 64" width="150" height="150">
-        <path d="M12 58 L12 32 L32 8 L52 32 L52 58 Z" fill="none" stroke="#dc3545" stroke-width="4" stroke-linejoin="round"></path>
-        <rect x="24" y="36" width="16" height="14" fill="none" stroke="#dc3545" stroke-width="3" rx="1"></rect>
-        <line x1="32" y1="36" x2="32" y2="50" stroke="#dc3545" stroke-width="2"></line>
+<main class="container">
+  <article style="max-width: 400px; margin: 15vh auto;">
+    <header style="text-align: center;">
+      <svg viewBox="0 0 64 64" width="100" height="100">
+        <path d="M12 58 L12 32 L32 8 L52 32 L52 58 Z" fill="none" stroke="var(--pico-del-color)" stroke-width="4" stroke-linejoin="round"></path>
+        <rect x="24" y="36" width="16" height="14" fill="none" stroke="var(--pico-del-color)" stroke-width="3" rx="1"></rect>
+        <line x1="32" y1="36" x2="32" y2="50" stroke="var(--pico-del-color)" stroke-width="2"></line>
       </svg>
-    </div>
+    </header>
 
     {% for message in get_messages(request) %}
       <div class="{{ message.css_class }}">{{ message.message }}</div>
     {% endfor %}
 
-    {% if redirect_uri %}
-      <input type="hidden" name="redirect_uri" value="{{ redirect_uri }}" />
-    {% endif %}
+    <form method="POST">
+      {% if redirect_uri %}
+        <input type="hidden" name="redirect_uri" value="{{ redirect_uri }}">
+      {% endif %}
 
-    <!-- Email input -->
-    <div class="mb-3 form-floating">
-      <input
-        type="email"
-        name="username"
-        id="email"
-        autocomplete="username"
-        class="form-control"
-        required
-      />
-      <label class="form-label" for="email">Email address</label>
-    </div>
+      <label>
+        Email address
+        <input type="email" name="username" autocomplete="username" required>
+      </label>
 
-    <!-- Password input -->
-    <div class="mb-3 form-floating">
-      <input
-        type="password"
-        name="password"
-        id="password"
-        autocomplete="current-password"
-        class="form-control"
-        required
-      />
-      <label class="form-label" for="password">Password</label>
-    </div>
+      <label>
+        Password
+        <input type="password" name="password" autocomplete="current-password" required>
+      </label>
 
-    <!-- Submit button -->
-    <div class="mb-3 text-center">
-      <button type="submit" class="btn btn-primary btn-block">Sign in</button>
-    </div>
-  </form>
+      <button type="submit">Sign in</button>
+    </form>
+  </article>
 </main>
 {% endblock %}
-
