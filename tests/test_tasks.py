@@ -92,3 +92,20 @@ async def test_delete_old_tasks(connection: None, clear_tasks: None) -> None:
     assert "old-task" not in names  # Should be deleted
     assert "recent-task" in names  # Should remain
     assert "pending-task" in names  # Should remain
+
+
+async def test_delete_old_tasks_schedule_exists(connection: None) -> None:
+    """Verify the migration created the scheduled task correctly."""
+    schedule = await db.fetchrow(
+        """
+        SELECT name, arguments, expression, is_enabled
+        FROM scheduled_task
+        WHERE name = 'delete-old-tasks'
+        """
+    )
+
+    assert schedule is not None, "Scheduled task not found - migration may not have run"
+    assert schedule["name"] == "delete-old-tasks"
+    assert schedule["arguments"] == {}
+    assert schedule["expression"] == "0 0 * * *"  # Daily at midnight
+    assert schedule["is_enabled"] is True
