@@ -14,9 +14,9 @@
 </hgroup>
 
 <form method="post" action="/settings/sensors/{{ sensor.id }}/" style="max-width: 500px;">
-  <label for="name">
+  <label>
     Name
-    <input type="text" id="name" name="name" required value="{{ sensor.name or '' }}">
+    <input type="text" name="name" required value="{{ sensor.name or '' }}">
     <small>A descriptive name for this sensor.</small>
   </label>
 
@@ -34,7 +34,7 @@
     <small>Mark this sensor as outdoor to use it for outdoor temperature readings.</small>
   </fieldset>
 
-  <label for="color">
+  <label>
     Chart color
     <div style="display: flex; gap: 0.5rem; max-width: 250px;">
       <input type="color" id="color-picker" value="{{ sensor.color or '#808080' }}" title="Choose color" style="width: 60px; padding: 0.25rem;">

@@ -14,19 +14,19 @@
 </hgroup>
 
 <form method="post" action="/settings/locations/{{ location.id }}/" style="max-width: 500px;">
-  <label for="name">
+  <label>
     Name
-    <input type="text" id="name" name="name" required value="{{ location.name }}">
+    <input type="text" name="name" required value="{{ location.name }}">
   </label>
 
-  <label for="latitude">
+  <label>
     Latitude
-    <input type="number" id="latitude" name="latitude" step="0.000001" required value="{{ location.coordinate.latitude }}">
+    <input type="number" name="latitude" step="0.000001" required value="{{ location.coordinate.latitude }}">
   </label>
 
-  <label for="longitude">
+  <label>
     Longitude
-    <input type="number" id="longitude" name="longitude" step="0.000001" required value="{{ location.coordinate.longitude }}">
+    <input type="number" name="longitude" step="0.000001" required value="{{ location.coordinate.longitude }}">
   </label>
 
   <div role="group">
