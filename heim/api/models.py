@@ -21,3 +21,10 @@ class TemperatureChartData(BaseModel):
     history: list[TemperatureReading]
     forecasts: list[ForecastInstance]
     now: datetime
+
+
+class SensorHistory(BaseModel):
+    sensor_name: str
+    is_outdoor: bool
+    color: str | None
+    readings: list[TemperatureReading]

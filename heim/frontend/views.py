@@ -118,7 +118,7 @@ async def location_overview(
         account_id=account_id, location_id=location_id, is_outdoor=False
     )
     sensor_data = []
-    for sensor_id, sensor_name, sensor_color in sensors:
+    for sensor_id, sensor_name, sensor_color, _ in sensors:
         measurements = await get_measurements_averaged(
             sensor_id=sensor_id,
             attribute=Attribute.AIR_TEMPERATURE,

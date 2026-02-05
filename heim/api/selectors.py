@@ -4,7 +4,12 @@ from ..accounts.queries import get_location
 from ..forecasts.queries import get_forecast, get_instances
 from ..sensors.queries import get_measurements_averaged, get_sensors
 from ..sensors.types import Attribute
-from .models import ForecastInstance, TemperatureChartData, TemperatureReading
+from .models import (
+    ForecastInstance,
+    SensorHistory,
+    TemperatureChartData,
+    TemperatureReading,
+)
 
 
 async def get_temperature_chart_data(
@@ -92,3 +97,39 @@ async def get_temperature_chart_data(
         forecasts=forecasts,
         now=now,
     )
+
+
+async def get_temperature_history(
+    *, account_id: int, location_id: int, days: int = 7
+) -> list[SensorHistory]:
+    """
+    Get temperature history for all sensors at a location.
+
+    Returns readings for each sensor, averaged over 15-minute buckets.
+    """
+    sensors = await get_sensors(account_id=account_id, location_id=location_id)
+
+    result: list[SensorHistory] = []
+    for sensor_id, sensor_name, sensor_color, is_outdoor in sensors:
+        measurements = await get_measurements_averaged(
+            sensor_id=sensor_id,
+            attribute=Attribute.AIR_TEMPERATURE,
+            hours=days * 24,
+            bucket_minutes=15,
+        )
+
+        readings = [
+            TemperatureReading(date=ts, temperature=value / 100)
+            for ts, value in measurements
+        ]
+
+        result.append(
+            SensorHistory(
+                sensor_name=sensor_name or f"Sensor {sensor_id}",
+                is_outdoor=is_outdoor,
+                color=sensor_color,
+                readings=readings,
+            )
+        )
+
+    return result

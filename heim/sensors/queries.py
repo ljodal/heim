@@ -7,9 +7,9 @@ from .types import Attribute
 
 async def get_sensors(
     *, account_id: int, location_id: int, is_outdoor: bool | None = None
-) -> list[tuple[int, str | None, str | None]]:
+) -> list[tuple[int, str | None, str | None, bool]]:
     """
-    Get sensors for a location. Returns list of (id, name, color) tuples.
+    Get sensors for a location. Returns list of (id, name, color, is_outdoor) tuples.
 
     Args:
         is_outdoor: If True, only outdoor sensors. If False, only indoor.
@@ -17,20 +17,20 @@ async def get_sensors(
     """
     if is_outdoor is None:
         query = """
-            SELECT id, name, color
+            SELECT id, name, color, COALESCE(is_outdoor, false) as is_outdoor
             FROM sensor
             WHERE location_id = $1 AND account_id = $2
         """
         rows = await db.fetch(query, location_id, account_id)
     else:
         query = """
-            SELECT id, name, color
+            SELECT id, name, color, COALESCE(is_outdoor, false) as is_outdoor
             FROM sensor
             WHERE location_id = $1 AND account_id = $2
               AND COALESCE(is_outdoor, false) = $3
         """
         rows = await db.fetch(query, location_id, account_id, is_outdoor)
-    return [(row["id"], row["name"], row["color"]) for row in rows]
+    return [(row["id"], row["name"], row["color"], row["is_outdoor"]) for row in rows]
 
 
 async def get_measurements(
