@@ -129,7 +129,7 @@ async def create_devices(
         )
 
         await update_sensor_data(account_id=account_id, sensor_id=sensor_id).schedule(
-            cron_expression="*/5 * * * *"
+            cron_expression="*/10 * * * *"
         )
 
 
